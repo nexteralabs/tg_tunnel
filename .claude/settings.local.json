@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "Bash(poetry run ruff:*)",
+      "Bash(python test:*)",
+      "Bash(python:*)",
+      "Bash(poetry run python:*)",
+      "Bash(docker compose:*)",
+      "Bash(poetry run:*)",
+      "Bash(docker exec:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
