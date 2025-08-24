@@ -8,7 +8,9 @@
       "Bash(poetry run python:*)",
       "Bash(docker compose:*)",
       "Bash(poetry run:*)",
-      "Bash(docker exec:*)"
+      "Bash(docker exec:*)",
+      "Bash(poetry show:*)",
+      "Bash(del test_*.py)"
     ],
     "deny": [],
     "ask": []
