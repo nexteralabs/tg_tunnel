@@ -10,7 +10,8 @@
       "Bash(poetry run:*)",
       "Bash(docker exec:*)",
       "Bash(poetry show:*)",
-      "Bash(del test_*.py)"
+      "Bash(del test_*.py)",
+      "Bash(poetry add:*)"
     ],
     "deny": [],
     "ask": []

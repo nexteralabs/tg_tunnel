@@ -78,3 +78,20 @@ poetry run prompt-cli fresh_start
 - For **channels**, free-text replies require a **linked discussion group**. For a private, single-user workflow, a **supergroup** is simpler.
 - The pattern `ID:#123 your text` is only acted upon by the bot; nothing else is parsed.
 - For production, run API and bot as separate processes/containers and add logging/metrics.
+
+
+## test payload
+
+{
+  "chat_id": "-1002954473836",
+  "text": "Do you approve this deployment to production?",
+  "media_path": "C:\\MediaGenerator\\data\\images\\Strong_bones_image_portrait.png",
+  "options": [
+    "Approve",
+    "Reject"
+  ],
+  "allow_text": false,
+  "callback_url": "https://your-app.com/webhook/prompts",
+  "correlation_id": "deploy-2024-001",
+  "ttl_sec": 3600
+}

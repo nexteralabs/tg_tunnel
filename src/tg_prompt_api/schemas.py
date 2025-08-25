@@ -12,10 +12,15 @@ class PromptIn(BaseModel):
         description="The prompt message to send",
         examples=["Do you approve this deployment to production?"]
     )
-    media_url: Optional[HttpUrl] = Field(
+    media_url: Optional[str] = Field(
         default=None,
         description="Optional image URL to include with the prompt",
         examples=["https://i.imgur.com/abc123.jpg", "https://cdn.example.com/image.png"]
+    )
+    media_path: Optional[str] = Field(
+        default=None,
+        description="Optional local file path to image (server-side file)",
+        examples=["C:\\images\\screenshot.png", "/home/user/image.jpg", "./temp/photo.png"]
     )
     options: Optional[List[str]] = Field(
         default=None,
@@ -26,7 +31,7 @@ class PromptIn(BaseModel):
         default=False,
         description="Allow text responses via ID:prompt_id format"
     )
-    callback_url: Optional[HttpUrl] = Field(
+    callback_url: Optional[str] = Field(
         default=None,
         description="Webhook URL for response notifications",
         examples=["https://your-app.com/webhook/prompts"]

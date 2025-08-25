@@ -93,7 +93,7 @@ async def on_any_message(m: Message):
 async def post_prompt_to_chat(
     prompt_id: str,
     text: str,
-    media_url: str | None,
+    media: str | None,  # Can be URL string, UploadFile, or None
     options: list[str] | None,
     target_chat_id: str | int,
 ):
@@ -108,40 +108,83 @@ async def post_prompt_to_chat(
             rows.append([InlineKeyboardButton(text=label, callback_data=f"{prompt_id}:{opt_id}")])
         kb = InlineKeyboardMarkup(inline_keyboard=rows)
 
-    # Create a temporary bot instance just for posting (avoids conflict with polling bot)
-    from aiogram import Bot
-    from aiogram.client.default import DefaultBotProperties
-    from aiogram.enums import ParseMode
-    
-    temp_bot = Bot(
-        token=settings.TELEGRAM_BOT_TOKEN.get_secret_value(),
-        default=DefaultBotProperties(parse_mode=ParseMode(settings.TELEGRAM_MESSAGE_PARSE_MODE)),
-    )
+    # Use the existing bot instance to avoid session conflicts
+    current_bot, _ = get_bot()
     
     try:
-        if media_url:
-            try:
-                # Try to send as photo first
-                msg = await temp_bot.send_photo(
-                    chat_id=target_chat_id, photo=media_url, caption=text, reply_markup=kb
-                )
-            except Exception as photo_error:
-                # If photo sending fails, fall back to text message
-                print(f"Failed to send photo from {media_url}: {photo_error}. Falling back to text message.")
-                msg = await temp_bot.send_message(
-                    chat_id=target_chat_id, 
-                    text=f"{text}\n\n[Media URL: {media_url}]", 
-                    reply_markup=kb
-                )
+        if media:
+            # Check if media is an UploadFile object, local file path, or URL string
+            from fastapi import UploadFile
+            import os
+            
+            if isinstance(media, UploadFile):
+                # Handle uploaded file
+                try:
+                    # Read file content for sending to Telegram
+                    file_content = await media.read()
+                    # Reset file position for potential re-reading
+                    await media.seek(0)
+                    
+                    # Send photo with file content
+                    from aiogram.types import BufferedInputFile
+                    photo = BufferedInputFile(file_content, filename=media.filename or "image.jpg")
+                    msg = await current_bot.send_photo(
+                        chat_id=target_chat_id, photo=photo, caption=text, reply_markup=kb
+                    )
+                except Exception as photo_error:
+                    # If photo sending fails, fall back to text message
+                    print(f"Failed to send uploaded photo {media.filename}: {photo_error}. Falling back to text message.")
+                    msg = await current_bot.send_message(
+                        chat_id=target_chat_id, 
+                        text=f"{text}\n\n[Uploaded file: {media.filename}]", 
+                        reply_markup=kb
+                    )
+            elif isinstance(media, str) and os.path.exists(media) and os.path.isfile(media):
+                # Handle local file path
+                try:
+                    # Read local file content
+                    with open(media, 'rb') as f:
+                        file_content = f.read()
+                    
+                    # Send photo with file content
+                    from aiogram.types import BufferedInputFile
+                    filename = os.path.basename(media)
+                    photo = BufferedInputFile(file_content, filename=filename)
+                    msg = await current_bot.send_photo(
+                        chat_id=target_chat_id, photo=photo, caption=text, reply_markup=kb
+                    )
+                except Exception as photo_error:
+                    # If photo sending fails, fall back to text message
+                    print(f"Failed to send local photo {media}: {photo_error}. Falling back to text message.")
+                    msg = await current_bot.send_message(
+                        chat_id=target_chat_id, 
+                        text=f"{text}\n\n[Local file: {media}]", 
+                        reply_markup=kb
+                    )
+            else:
+                # Handle URL string (existing logic)
+                try:
+                    # Try to send as photo first
+                    msg = await temp_bot.send_photo(
+                        chat_id=target_chat_id, photo=media, caption=text, reply_markup=kb
+                    )
+                except Exception as photo_error:
+                    # If photo sending fails, fall back to text message
+                    print(f"Failed to send photo from {media}: {photo_error}. Falling back to text message.")
+                    msg = await current_bot.send_message(
+                        chat_id=target_chat_id, 
+                        text=f"{text}\n\n[Media URL: {media}]", 
+                        reply_markup=kb
+                    )
         else:
-            msg = await temp_bot.send_message(chat_id=target_chat_id, text=text, reply_markup=kb)
+            msg = await current_bot.send_message(chat_id=target_chat_id, text=text, reply_markup=kb)
             
         async for aconn in get_conn():
             await set_message_id(aconn, prompt_id, msg.message_id)
             await set_message_map(aconn, prompt_id, msg.message_id)
     finally:
-        # Close the temporary bot session
-        await temp_bot.session.close()
+        # No session cleanup needed - reusing existing bot instance
+        pass
 
 
 # Callback handler (will be registered in get_bot())
