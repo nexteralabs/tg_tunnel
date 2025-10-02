@@ -191,6 +191,27 @@ async def mark_answered(
             prompt_id,
             PENDING,
         )
+    
+    # Send callback notification if the prompt has a callback URL
+    from .notifier import notify_callback
+    prompt_data = await get_prompt(aconn, prompt_id)
+    if prompt_data and prompt_data.get("callback_url"):
+        try:
+            callback_payload = {
+                "prompt_id": prompt_id,
+                "correlation_id": prompt_data.get("correlation_id"),
+                "text": prompt_data.get("text"),
+                "answer": {
+                    "type": answer_type,
+                    "value": value,
+                    "user_id": user_id,
+                    "username": username
+                },
+                "answered_at": prompt_data.get("answered_at").isoformat() if prompt_data.get("answered_at") else None
+            }
+            await notify_callback(prompt_data["callback_url"], callback_payload)
+        except Exception as callback_error:
+            print(f"Failed to send callback notification: {callback_error}")
 
 
 async def expire_old(aconn) -> int:

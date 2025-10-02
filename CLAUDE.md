@@ -11,7 +11,7 @@ Always make a full analysis and PLAN your next modification properly.
 
 ** NEVER implement extra features the user didnt ask without asking first **
 ** NEVER implement fallback mechanism with default values without being asked to do so **
-** Fallback mechanism hide problems and make the application very hard
+** Fallback mechanism hide problems and make the application very hard to debug and maintain
 ** WINDOWS CONSTRAINT: Never use emojis in print() commands - they cause UnicodeEncodeError on Windows **
 
 

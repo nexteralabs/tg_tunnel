@@ -59,7 +59,7 @@ async def create_prompt_api(p: PromptIn):
             error_msg = f"Path is not a file: {p.media_path}"
             print(f"ERROR: {error_msg}")
             raise HTTPException(status_code=400, detail={"error": "not_a_file", "message": error_msg, "path": p.media_path})
-        print(f"File validated successfully: {p.media_path}")
+        print(f"uploading file: {p.media_path}")
         media_to_send = p.media_path
 
     # Create prompt and get the simple ID format (e.g. "#123")
