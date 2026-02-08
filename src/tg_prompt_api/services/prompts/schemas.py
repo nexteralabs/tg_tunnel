@@ -1,52 +1,56 @@
-from pydantic import BaseModel, HttpUrl, Field
+from pydantic import BaseModel, Field
 from typing import Optional, List
 
 
 class PromptIn(BaseModel):
+    channel_id: str | None = Field(
+        default=None,
+        description="Channel to use (defaults to '__system_prompt__')",
+        examples=["__system_prompt__", "my-ai-assistant"],
+    )
     chat_id: str | int | None = Field(
-        default=None, 
-        description="Telegram chat ID (uses default if not provided)",
-        examples=["-1002954473836", "123456789"]
+        default=None,
+        description="DEPRECATED: Use channel_id instead. Ignored if channel_id is provided.",
+        examples=["-1002954473836", "123456789"],
     )
     text: str = Field(
         description="The prompt message to send",
-        examples=["Do you approve this deployment to production?"]
+        examples=["Do you approve this deployment to production?"],
     )
     media_url: Optional[str] = Field(
         default=None,
         description="Optional image URL to include with the prompt",
-        examples=["https://i.imgur.com/abc123.jpg", "https://cdn.example.com/image.png"]
+        examples=["https://i.imgur.com/abc123.jpg", "https://cdn.example.com/image.png"],
     )
     media_path: Optional[str] = Field(
         default=None,
         description="Optional local file path to image (server-side file)",
-        examples=["C:\\images\\screenshot.png", "/home/user/image.jpg", "./temp/photo.png"]
+        examples=["C:\\images\\screenshot.png", "/home/user/image.jpg", "./temp/photo.png"],
     )
     options: Optional[List[str]] = Field(
         default=None,
         description="Button options for quick responses",
-        examples=[["Approve", "Reject"], ["Yes", "No", "Maybe"]]
+        examples=[["Approve", "Reject"], ["Yes", "No", "Maybe"]],
     )
     allow_text: bool = Field(
-        default=False,
-        description="Allow text responses via ID:prompt_id format"
+        default=False, description="Allow text responses via ID:prompt_id format"
     )
     callback_url: Optional[str] = Field(
         default=None,
         description="Webhook URL for response notifications",
-        examples=["https://your-app.com/webhook/prompts"]
+        examples=["https://your-app.com/webhook/prompts"],
     )
     correlation_id: Optional[str] = Field(
         default=None,
         description="Your reference ID for this prompt",
-        examples=["deploy-2024-001", "approval-request-456"]
+        examples=["deploy-2024-001", "approval-request-456"],
     )
     ttl_sec: Optional[int] = Field(
-        default=3600, 
-        ge=0, 
+        default=3600,
+        ge=0,
         le=7 * 24 * 3600,
         description="Time-to-live in seconds (max 7 days)",
-        examples=[3600, 7200, 86400]
+        examples=[3600, 7200, 86400],
     )
 
 

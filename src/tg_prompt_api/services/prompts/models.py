@@ -1,7 +1,7 @@
 from __future__ import annotations
 from datetime import datetime, timedelta, timezone
 import json
-from .db import fetchone, fetchall, execute
+from ...core.db import fetchone, fetchall, execute
 
 PENDING = "PENDING"
 ANSWERED = "ANSWERED"
@@ -24,11 +24,12 @@ async def create_prompt(
     expires_at = None
     if ttl_sec and ttl_sec > 0:
         expires_at = datetime.now(timezone.utc) + timedelta(seconds=ttl_sec)
-    
+
     # Generate a temporary UUID for the TEXT id column (keeping for compatibility)
     import uuid
+
     temp_id = str(uuid.uuid4())
-    
+
     row = await fetchone(
         aconn,
         """
@@ -48,7 +49,7 @@ async def create_prompt(
         PENDING,
         expires_at,
     )
-    
+
     # Return the simple formatted ID
     return f"#{row['prompt_num']}"
 
@@ -65,7 +66,7 @@ async def add_option_map(aconn, prompt_id: str, option_id: str, label: str) -> N
     else:
         # Fallback for legacy format
         db_id = prompt_id
-        
+
     await execute(
         aconn,
         """
@@ -81,7 +82,9 @@ async def set_message_id(aconn, prompt_id: str, message_id: int) -> None:
     """Set message ID using simple prompt ID '#123' or legacy ID"""
     prompt_num = parse_prompt_id(prompt_id)
     if prompt_num:
-        await execute(aconn, "UPDATE prompts SET message_id=%s WHERE prompt_num=%s", message_id, prompt_num)
+        await execute(
+            aconn, "UPDATE prompts SET message_id=%s WHERE prompt_num=%s", message_id, prompt_num
+        )
     else:
         # Fallback for legacy format
         await execute(aconn, "UPDATE prompts SET message_id=%s WHERE id=%s", message_id, prompt_id)
@@ -95,7 +98,7 @@ async def list_pending(aconn) -> list[dict]:
 
 def parse_prompt_id(prompt_id: str) -> int | None:
     """Parse simple prompt ID format '#123' to integer"""
-    if prompt_id.startswith('#'):
+    if prompt_id.startswith("#"):
         try:
             return int(prompt_id[1:])
         except ValueError:
@@ -105,6 +108,7 @@ def parse_prompt_id(prompt_id: str) -> int | None:
         return int(prompt_id)
     # Fallback for old format during transition
     return None
+
 
 async def get_prompt(aconn, prompt_id: str) -> dict | None:
     """Get prompt by simple ID format '#123' or legacy ID"""
@@ -128,7 +132,7 @@ async def resolve_option_label(aconn, prompt_id: str, option_id: str) -> str | N
     else:
         # Fallback for legacy format
         db_id = prompt_id
-        
+
     row = await fetchone(
         aconn,
         "SELECT label FROM prompt_options WHERE prompt_id=%s AND option_id=%s",
@@ -191,27 +195,37 @@ async def mark_answered(
             prompt_id,
             PENDING,
         )
-    
-    # Send callback notification if the prompt has a callback URL
-    from .notifier import notify_callback
+
+    # Schedule callback notification as background task (don't block Telegram response!)
+    import asyncio
+
     prompt_data = await get_prompt(aconn, prompt_id)
     if prompt_data and prompt_data.get("callback_url"):
-        try:
-            callback_payload = {
-                "prompt_id": prompt_id,
-                "correlation_id": prompt_data.get("correlation_id"),
-                "text": prompt_data.get("text"),
-                "answer": {
-                    "type": answer_type,
-                    "value": value,
-                    "user_id": user_id,
-                    "username": username
-                },
-                "answered_at": prompt_data.get("answered_at").isoformat() if prompt_data.get("answered_at") else None
-            }
-            await notify_callback(prompt_data["callback_url"], callback_payload)
-        except Exception as callback_error:
-            print(f"Failed to send callback notification: {callback_error}")
+
+        async def _send_callback_background():
+            try:
+                from ...core.notifier import notify_callback
+
+                callback_payload = {
+                    "prompt_id": prompt_id,
+                    "correlation_id": prompt_data.get("correlation_id"),
+                    "text": prompt_data.get("text"),
+                    "answer": {
+                        "type": answer_type,
+                        "value": value,
+                        "user_id": user_id,
+                        "username": username,
+                    },
+                    "answered_at": prompt_data.get("answered_at").isoformat()
+                    if prompt_data.get("answered_at")
+                    else None,
+                }
+                await notify_callback(prompt_data["callback_url"], callback_payload)
+            except Exception as callback_error:
+                print(f"Background callback failed: {callback_error}")
+
+        # Fire and forget - don't wait for callback to complete
+        asyncio.create_task(_send_callback_background())
 
 
 async def expire_old(aconn) -> int:

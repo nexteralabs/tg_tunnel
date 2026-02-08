@@ -4,57 +4,30 @@ import typer
 import uvicorn
 import psycopg
 
-from .config import settings
-from .telegram_bot import get_bot, manual_polling
-from .db import get_conn
-from .models import clean_on_boot
-from .security import setup_secure_logging
+from .core.config import settings
+
+# Removed old bot polling imports - now handled by channel system
+from .core.db import get_conn
 
 app = typer.Typer(add_completion=False)
 
 
-def _run_api_wrapper():
-    """Wrapper to ensure proper event loop policy in subprocess."""
-    if os.name == 'nt':  # Windows
-        asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
-    run_api()
+# REMOVED: _run_api_wrapper (no longer needed)
 
 
 @app.command("run_api")
 def run_api(host: str = "0.0.0.0", port: int = 8100):
     """Run FastAPI server."""
     # Fix Windows event loop policy for psycopg
-    if os.name == 'nt':  # Windows
-        asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
-    
-    uvicorn.run("tg_prompt_api.api:app", host=host, port=port, reload=False)
-
-
-@app.command("run_bot")
-def run_bot():
-    """Run Telegram long-polling bot."""
-    
-    # Fix Windows event loop policy for psycopg
-    if os.name == 'nt':  # Windows
+    if os.name == "nt":  # Windows
         asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
-    async def _main():
-        # Setup secure logging with token redaction
-        setup_secure_logging()
+    uvicorn.run("tg_prompt_api.api.app:app", host=host, port=port, reload=False)
 
-        # Get bot and dispatcher instances
-        bot, dp = get_bot()
-        
-        # ensure webhook mode is disabled and avoid processing stale backlog
-        await bot.delete_webhook(drop_pending_updates=True)
-        # optional: clean DB on boot
-        if settings.CLEAN_ON_BOOT:
-            async for aconn in get_conn():
-                await clean_on_boot(aconn)
-        # start manual polling to avoid aiogram's internal conflicts on Windows
-        await manual_polling(bot, dp)
 
-    asyncio.run(_main())
+# REMOVED: run_bot command
+# The default bot is now handled by the channel system (__system_prompt__ channel)
+# All polling is managed by the API process via channel poller
 
 
 @app.command("init_db")
@@ -93,29 +66,48 @@ def fresh_start():
             typer.echo("Fresh start complete.")
 
 
-@app.command("run_all")
-def run_all():
-    """Run API and Bot together (simple dev mode)."""
-    import multiprocessing as mp
-    
-    # Fix Windows event loop policy for psycopg in main process
-    if os.name == 'nt':  # Windows
-        asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
-        # Set multiprocessing start method for Windows compatibility
-        mp.set_start_method('spawn', force=True)
+@app.command("init_channels")
+def init_channels():
+    """Create channels table for Telegram Channel Gateway"""
+    sql_path = os.path.join(os.path.dirname(__file__), "..", "..", "scripts", "add_channels.sql")
+    sql_path = os.path.abspath(sql_path)
+    dsn = str(settings.DATABASE_URL)
+    if dsn.startswith("postgresql+psycopg"):
+        dsn = dsn.replace("postgresql+psycopg", "postgresql")
+    with open(sql_path, "r", encoding="utf-8") as f:
+        ddl = f.read()
+    with psycopg.connect(dsn) as conn:
+        with conn.cursor() as cur:
+            cur.execute(ddl)
+            conn.commit()
+            typer.echo("Channels table created.")
 
-    p1 = mp.Process(target=_run_api_wrapper)
-    p1.start()
-    try:
-        run_bot()
-    except KeyboardInterrupt:
-        typer.echo("\nShutting down services...")
-    finally:
-        p1.terminate()
-        p1.join(timeout=5)  # Wait up to 5 seconds for clean shutdown
-        if p1.is_alive():
-            typer.echo("Force killing API process...")
-            p1.kill()
+
+@app.command("list_channels")
+def list_channels_cmd():
+    """List registered channels"""
+    # Fix Windows event loop policy for psycopg
+    if os.name == "nt":  # Windows
+        asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+
+    async def _list():
+        from .services.channels.models import list_active_channels
+
+        async for conn in get_conn():
+            channels = await list_active_channels(conn)
+
+        if not channels:
+            typer.echo("No active channels.")
+        else:
+            for ch in channels:
+                typer.echo(f"- {ch['channel_id']} -> {ch['telegram_chat_id']}")
+
+    asyncio.run(_list())
+
+
+# REMOVED: run_all command
+# No longer needed - just use `run_api` which now handles all polling
+# (including the default bot via __system_prompt__ channel)
 
 
 if __name__ == "__main__":

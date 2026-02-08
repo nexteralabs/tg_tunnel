@@ -1,17 +1,12 @@
 {
   "permissions": {
     "allow": [
-      "WebSearch",
+      "Bash(curl -s \"https://api.telegram.org/bot8433418814:AAEfotSaBQty3hPJqBa7-wj9Ctk4dNM-LwY/getUpdates?limit=5\")",
+      "Bash(git checkout:*)",
+      "Bash(poetry run ruff check:*)",
+      "Bash(timeout 5 poetry run:*)",
       "Bash(poetry run ruff:*)",
-      "Bash(python test:*)",
-      "Bash(python:*)",
-      "Bash(poetry run python:*)",
-      "Bash(docker compose:*)",
-      "Bash(poetry run:*)",
-      "Bash(docker exec:*)",
-      "Bash(poetry show:*)",
-      "Bash(del test_*.py)",
-      "Bash(poetry add:*)"
+      "Bash(poetry run prompt-cli:*)"
     ],
     "deny": [],
     "ask": []

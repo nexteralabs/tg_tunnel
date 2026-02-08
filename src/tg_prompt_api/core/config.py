@@ -17,6 +17,11 @@ class Settings(BaseSettings):
 
     CLEAN_ON_BOOT: bool = True
 
+    # Channel Gateway settings
+    CHANNEL_CALLBACK_MAX_RETRIES: int = 3
+    CHANNEL_CALLBACK_RETRY_DELAY: int = 5  # seconds
+    CHANNEL_OFFLINE_NOTIFICATION: str = "Assistant offline, could not deliver message."
+
     @field_validator("TELEGRAM_BOT_TOKEN")
     @classmethod
     def validate_token_format(cls, v: SecretStr) -> SecretStr:
@@ -28,6 +33,7 @@ class Settings(BaseSettings):
 
     class Config:
         env_file = ".env"
+        extra = "ignore"  # Ignore extra fields in .env file
 
 
 settings = Settings()

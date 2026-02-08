@@ -57,14 +57,11 @@ poetry run prompt-cli init_db
 
 ### Running the Application
 ```bash
-# Run API server (port 8100 - changed from 8000)
+# Run API server (port 8100) - handles all polling (prompts + channels)
 poetry run prompt-cli run_api
 
-# Run Telegram bot (long polling)
-poetry run prompt-cli run_bot
-
-# Run both API and bot together (dev mode)
-poetry run prompt-cli run_all
+# Note: Old run_bot and run_all commands removed
+# The API now handles all Telegram polling via the unified channel system
 ```
 
 ### Database Operations
@@ -88,14 +85,31 @@ pytest
 
 ## Architecture Overview
 
-This is a **Telegram Prompt API** service that posts prompts to Telegram chats, collects responses via buttons or text patterns, and notifies callers via callbacks.
+This is a **Telegram Prompt & Channel Gateway** with two main services:
+
+1. **Prompt API**: Posts prompts to Telegram chats, collects responses via buttons or text patterns, and notifies callers via callbacks
+2. **Channel Gateway**: Bidirectional messaging gateway for multiple AI assistants to communicate with Telegram channels via assigned bots
 
 ### Core Components
 
-- **FastAPI API** (`api.py`): REST endpoints for creating prompts and querying status
-- **Telegram Bot** (`telegram_bot.py`): aiogram-based bot handling messages and button callbacks
-- **Database Layer** (`models.py`, `db.py`): PostgreSQL operations for prompt lifecycle
-- **CLI** (`cli.py`): Typer-based command interface for running services
+**Infrastructure Layer** (`core/`):
+- **config.py**: Pydantic settings with token validation
+- **db.py**: PostgreSQL async connection pool
+- **telegram_bot.py**: Multi-bot management, message sending utilities
+- **security.py**: Token redaction for logs
+- **util.py**: Signing, retry utilities
+- **notifier.py**: Callback notifications
+
+**Service Layer** (`services/`):
+- **prompts/**: Prompt domain (models, schemas, service, handlers)
+- **channels/**: Channel domain (models, schemas, service, poller)
+
+**API Layer** (`api/`):
+- **app.py**: FastAPI factory
+- **v1/prompts.py**: Prompt REST endpoints
+- **v1/channels.py**: Channel REST endpoints
+
+**CLI** (`cli.py`): Typer-based commands for running services and migrations
 
 ### Key Patterns
 
@@ -112,18 +126,34 @@ This is a **Telegram Prompt API** service that posts prompts to Telegram chats, 
 - **Confirmation messages**: Visual distinction with ✅ Approved vs 🔴 Rejected styling
 
 #### Database Schema
+
+**Prompt Tables:**
 - **prompts**: Main table with `id` (TEXT, legacy UUID) and `prompt_num` (SERIAL, simple counter)
 - **prompt_options**: Maps button option_ids to display labels
 - States: `PENDING` → `ANSWERED` | `EXPIRED`
 - **ID Format**: Simple counter format `#123` (user-facing) backed by auto-incrementing `prompt_num`
 
+**Channel Tables:**
+- **channels**: Channel registrations with bot tokens, callback URLs, polling state
+- Columns: `channel_id` (PK), `telegram_chat_id`, `bot_token`, `callback_url`, `last_update_id`, `is_active`
+
+#### Channel Gateway Pattern
+1. **Register** via `/register-channel` → stored in PostgreSQL, polling starts immediately
+2. **Poll** Telegram using channel's bot → `getUpdates` with offset tracking
+3. **Forward** messages to callback URL with retry logic (3 attempts, 5 sec delay)
+4. **Notify** channel if callback offline after retries
+5. **Send** messages via `/send` using channel's bot
+
 ### Configuration
-Environment-based settings in `config.py`:
-- `TELEGRAM_BOT_TOKEN`: Bot API token
+Environment-based settings in `core/config.py`:
+- `TELEGRAM_BOT_TOKEN`: Default bot token for prompts
 - `TELEGRAM_TARGET_CHAT_ID`: Default chat for prompts
 - `DATABASE_URL`: PostgreSQL connection string
 - `CALLBACK_SIGNING_SECRET`: HMAC key for webhook signatures
 - `CLEAN_ON_BOOT`: Auto-cleanup failed prompts on startup
+- `CHANNEL_CALLBACK_MAX_RETRIES`: Callback retry attempts (default: 3)
+- `CHANNEL_CALLBACK_RETRY_DELAY`: Delay between retries in seconds (default: 5)
+- `CHANNEL_OFFLINE_NOTIFICATION`: Message sent when callback fails
 
 ### Development Notes
 - Uses **long polling** by default (no webhook setup needed)

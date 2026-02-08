@@ -1,6 +1,8 @@
-# Telegram Prompt API
+# Telegram Prompt & Channel Gateway
 
-Generic service to post prompts into Telegram (channel/group), collect replies (buttons or `ID:#123 reply text`), and notify callers.
+Two services in one:
+1. **Prompt API**: Post prompts into Telegram (channel/group), collect replies (buttons or `ID:#123 reply text`), and notify callers.
+2. **Channel Gateway**: Bidirectional messaging gateway for multiple AI assistants to communicate with Telegram channels via assigned bots.
 
 ## Quick start
 
@@ -9,12 +11,53 @@ poetry install
 docker compose up -d
 cp .env.example .env
 poetry run prompt-cli init_db
-# run in two terminals, or use run_all
+poetry run prompt-cli init_channels
+
+# Run the API (handles all polling - prompts and channels)
 poetry run prompt-cli run_api
-poetry run prompt-cli run_bot
-# or
-poetry run prompt-cli run_all
 ```
+
+## Channel Gateway (New Feature)
+
+Initialize channels table:
+```bash
+poetry run prompt-cli init_channels
+```
+
+Register a channel and start polling:
+```bash
+curl -X POST http://localhost:8100/register-channel \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "channel_id": "finance_ai",
+    "telegram_chat_id": "-1001234567890",
+    "bot_token": "123456:ABCDEF...",
+    "callback_url": "http://localhost:5001/on_telegram"
+  }'
+```
+
+Send message to channel:
+```bash
+curl -X POST http://localhost:8100/send \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "channel_id": "finance_ai",
+    "text": "Hello from AI assistant!"
+  }'
+```
+
+List active channels:
+```bash
+curl http://localhost:8100/channels
+poetry run prompt-cli list_channels
+```
+
+**Features:**
+- Idempotent registration (re-register safely)
+- Per-channel polling with auto-restore on startup
+- Callback retry logic (3 attempts, 5 sec delay)
+- Offline notification when callback fails
+- Multiple channels with dedicated bots
 
 ## Long polling notes
 
@@ -28,7 +71,7 @@ This project defaults to **long polling** (no public URL needed). On bot startup
   await dp.start_polling(bot, allowed_updates=["message","callback_query"])
   ```
 
-## API
+## Prompt API
 
 Create a prompt:
 ```bash
