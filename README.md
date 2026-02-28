@@ -6,23 +6,26 @@ Two services in one:
 
 ## Quick start
 
+### Local development
 ```bash
 poetry install
-docker compose up -d
-cp .env.example .env
+cp .env.example .env       # edit DATABASE_URL to point to your Postgres
 poetry run prompt-cli init_db
 poetry run prompt-cli init_channels
-
-# Run the API (handles all polling - prompts and channels)
 poetry run prompt-cli run_api
 ```
 
-## Channel Gateway (New Feature)
-
-Initialize channels table:
+### Docker (production)
 ```bash
-poetry run prompt-cli init_channels
+cp .env.example .env       # edit both DATABASE_URL and DATABASE_URL_DOCKER
+docker compose up -d
 ```
+
+The container exposes port `8100`. Your `.env` needs two database URLs:
+- `DATABASE_URL` — used for local dev (`localhost`)
+- `DATABASE_URL_DOCKER` — used inside the container (`host.docker.internal`)
+
+## Channel Gateway
 
 Register a channel and start polling:
 ```bash
@@ -120,7 +123,7 @@ poetry run prompt-cli fresh_start
 
 - For **channels**, free-text replies require a **linked discussion group**. For a private, single-user workflow, a **supergroup** is simpler.
 - The pattern `ID:#123 your text` is only acted upon by the bot; nothing else is parsed.
-- For production, run API and bot as separate processes/containers and add logging/metrics.
+- For production, use `docker compose up -d` to run the API in a container.
 
 
 ## test payload

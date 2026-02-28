@@ -6,6 +6,7 @@ import httpx
 from ...core.db import get_conn
 from ...core.telegram_bot import get_bot_by_token
 from ...core.config import settings
+from ...core.util import resolve_callback_url
 from . import models
 
 
@@ -26,7 +27,7 @@ async def forward_to_callback(channel: dict, message_event: dict) -> bool:
     Forward message to callback with retry logic (matches MVP reference).
     Returns True if successful, False if all retries failed.
     """
-    callback_url = channel["callback_url"]
+    callback_url = resolve_callback_url(channel["callback_url"])
     chat_id = channel["telegram_chat_id"]
 
     for attempt in range(1, settings.CHANNEL_CALLBACK_MAX_RETRIES + 1):

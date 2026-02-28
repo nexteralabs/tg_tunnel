@@ -1,0 +1,13 @@
+.git
+.github
+.claude
+.env
+.venv
+__pycache__
+*.pyc
+*.pyo
+*.egg-info
+dist
+.ruff_cache
+.pytest_cache
+*.code-workspace

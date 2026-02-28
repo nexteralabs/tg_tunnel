@@ -6,7 +6,9 @@
       "Bash(poetry run ruff check:*)",
       "Bash(timeout 5 poetry run:*)",
       "Bash(poetry run ruff:*)",
-      "Bash(poetry run prompt-cli:*)"
+      "Bash(poetry run prompt-cli:*)",
+      "Bash(curl:*)",
+      "Bash(docker compose down:*)"
     ],
     "deny": [],
     "ask": []

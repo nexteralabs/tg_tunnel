@@ -1,7 +1,24 @@
 import hmac
 import hashlib
+import os
+from urllib.parse import urlparse, urlunparse
 from tenacity import retry, wait_exponential_jitter, stop_after_attempt
 from .config import settings
+
+_IN_DOCKER = os.path.exists("/.dockerenv")
+
+
+def resolve_callback_url(url: str) -> str:
+    """Rewrite localhost URLs to host.docker.internal when running in Docker."""
+    if not _IN_DOCKER:
+        return url
+    parsed = urlparse(url)
+    if parsed.hostname in ("localhost", "127.0.0.1"):
+        parsed = parsed._replace(
+            netloc=parsed.netloc.replace(parsed.hostname, "host.docker.internal")
+        )
+        return urlunparse(parsed)
+    return url
 
 
 def ulid(prefix: str = "p") -> str:
