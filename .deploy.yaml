@@ -8,7 +8,7 @@ deploy:
 health:
   checks:
     - name: api
-      url: http://localhost:8100/health
+      url: http://localhost:8100/channels
       expect_status: 200
   interval: 30s
   grace_period: 30s
@@ -19,7 +19,7 @@ monitoring:
     - type: docker_logs
       container: telegram_prompt_api-api-1
     - type: http
-      url: http://localhost:8100/health
+      url: http://localhost:8100/channels
       interval: 30s
 
   rules:
