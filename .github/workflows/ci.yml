@@ -1,0 +1,13 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    uses: GeoMarceauOrg/common_pipelines/.github/workflows/build_push.yml@main
+    with:
+      image_name: telegram-prompt-api
+    secrets:
+      token: ${{ secrets.GITHUB_TOKEN }}

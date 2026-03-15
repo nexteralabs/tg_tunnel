@@ -1,0 +1,46 @@
+app:
+  name: telegram-prompt-api
+  image: ghcr.io/geomarceauorg/telegram-prompt-api:latest
+
+deploy:
+  compose_file: docker-compose.yml
+
+health:
+  checks:
+    - name: api
+      url: http://localhost:8100/health
+      expect_status: 200
+  interval: 30s
+  grace_period: 30s
+  failure_threshold: 3
+
+monitoring:
+  sources:
+    - type: docker_logs
+      container: telegram_prompt_api-api-1
+    - type: http
+      url: http://localhost:8100/health
+      interval: 30s
+
+  rules:
+    - name: error_spike
+      source: docker_logs
+      pattern: "ERROR|CRITICAL"
+      window: 5m
+      threshold: "> 10"
+      severity: critical
+    - name: telegram_polling_failure
+      source: docker_logs
+      pattern: "TelegramNetworkError|polling.*failed"
+      severity: warning
+
+rollback:
+  enabled: true
+  strategy: previous_image
+
+alerts:
+  on_deploy: true
+  on_failure: true
+  on_rollback: true
+  channels:
+    - telegram
