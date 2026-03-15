@@ -6,6 +6,9 @@ on:
 
 jobs:
   build:
+    permissions:
+      contents: read
+      packages: write
     uses: GeoMarceauOrg/common_pipelines/.github/workflows/build_push.yml@main
     with:
       image_name: telegram-prompt-api
