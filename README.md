@@ -8,11 +8,11 @@ Two services in one:
 
 ### Local development
 ```bash
-poetry install
+uv sync
 cp .env.example .env       # edit DATABASE_URL to point to your Postgres
-poetry run prompt-cli init_db
-poetry run prompt-cli init_channels
-poetry run prompt-cli run_api
+uv run prompt-cli init_db
+uv run prompt-cli init_channels
+uv run prompt-cli run_api
 ```
 
 ### Docker (production)
@@ -52,7 +52,7 @@ curl -X POST http://localhost:8100/send \
 List active channels:
 ```bash
 curl http://localhost:8100/channels
-poetry run prompt-cli list_channels
+uv run prompt-cli list_channels
 ```
 
 **Features:**
@@ -116,7 +116,7 @@ Set `callback_url` in the POST; the service will POST back the answer as JSON, s
 
 On boot you can set `CLEAN_ON_BOOT=true` and/or run:
 ```bash
-poetry run prompt-cli fresh_start
+uv run prompt-cli fresh_start
 ```
 
 ## Notes
