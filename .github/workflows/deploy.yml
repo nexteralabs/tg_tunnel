@@ -1,0 +1,15 @@
+name: Build, Push & Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    uses: NexteraLabs/common_pipelines/.github/workflows/sre_build_deploy.yml@main
+    with:
+      image_name:    telegram_prompt_api
+      sre_agent_url: ${{ vars.SRE_AGENT_URL }}
+    secrets:
+      token: ${{ secrets.GITHUB_TOKEN }}

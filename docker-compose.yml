@@ -1,11 +1,16 @@
 services:
   api:
-    build: .
+    image: ghcr.io/nexteralabs/telegram_prompt_api:latest
+    container_name: telegram-prompt-api
     restart: unless-stopped
     ports: ["8100:8100"]
     env_file: .env
     environment:
-      # Override DATABASE_URL to reach host Postgres from inside the container
-      # (env_file uses localhost, but inside Docker that means the container itself)
       DATABASE_URL: ${DATABASE_URL_DOCKER}
     extra_hosts: ["host.docker.internal:host-gateway"]
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:8100/channels"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
