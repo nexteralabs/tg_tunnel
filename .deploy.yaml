@@ -5,6 +5,7 @@ app:
 deploy:
   compose_file: docker-compose.yml
   env_file: .env
+  work_dir: /devel/telegram_prompt_api
   pre_deploy: []
   post_deploy: []
 
