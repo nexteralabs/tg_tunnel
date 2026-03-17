@@ -49,16 +49,16 @@ Always make a full analysis and PLAN your next modification properly.
 
 ### Setup and Installation
 ```bash
-poetry install
+uv sync
 docker compose up -d
 cp .env.example .env
-poetry run prompt-cli init_db
+uv run prompt-cli init_db
 ```
 
 ### Running the Application
 ```bash
 # Run API server (port 8100) - handles all polling (prompts + channels)
-poetry run prompt-cli run_api
+uv run prompt-cli run_api
 
 # Note: Old run_bot and run_all commands removed
 # The API now handles all Telegram polling via the unified channel system
@@ -67,10 +67,10 @@ poetry run prompt-cli run_api
 ### Database Operations
 ```bash
 # Initialize database schema
-poetry run prompt-cli init_db
+uv run prompt-cli init_db
 
 # Clean test data and reinitialize
-poetry run prompt-cli fresh_start
+uv run prompt-cli fresh_start
 ```
 
 ### Code Quality

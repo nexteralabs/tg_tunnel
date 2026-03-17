@@ -36,7 +36,7 @@ monitoring:
 
     - name: polling_failure
       source: docker_logs
-      pattern: "Failed to poll|polling.*error|getUpdates.*failed"
+      pattern: "TelegramNetworkError|polling.*failed|Failed to poll|getUpdates.*failed"
       window: 10m
       threshold: "> 3"
       severity: warning
