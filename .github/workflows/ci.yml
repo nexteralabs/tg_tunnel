@@ -7,9 +7,9 @@ on:
 jobs:
   build:
     permissions:
-      contents: read
+      contents: write
       packages: write
-    uses: GeoMarceauOrg/common_pipelines/.github/workflows/build_push.yml@main
+    uses: NexteraLabs/common_pipelines/.github/workflows/build_push.yml@main
     with:
       image_name: telegram-prompt-api
     secrets:
