@@ -17,13 +17,13 @@ uv run prompt-cli run_api
 
 ### Docker (production)
 ```bash
-cp .env.example .env       # edit both DATABASE_URL and DATABASE_URL_DOCKER
+cp .env.example .env       # edit both DATABASE_URL and DATABASE_URL_FROM_CONTAINER
 docker compose up -d
 ```
 
 The container exposes port `8100`. Your `.env` needs two database URLs:
 - `DATABASE_URL` — used for local dev (`localhost`)
-- `DATABASE_URL_DOCKER` — used inside the container (`host.docker.internal`)
+- `DATABASE_URL_FROM_CONTAINER` — used inside the container (`host.docker.internal`)
 
 ## Channel Gateway
 
