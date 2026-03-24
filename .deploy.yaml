@@ -3,11 +3,7 @@ app:
   image: ghcr.io/nexteralabs/telegram_prompt_api:latest
 
 deploy:
-  compose_file: docker-compose.yml
   env_file: .env
-  work_dir: /devel/telegram_prompt_api
-  pre_deploy: []
-  post_deploy: []
 
 health:
   checks:
