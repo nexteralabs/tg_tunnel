@@ -6,26 +6,57 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
   packages: write
 
 jobs:
-  deploy:
-    uses: NexteraLabs/common_pipelines/.github/workflows/sre_build_deploy.yml@main
+  build-push:
+    uses: NexteraLabs/common_pipelines/.github/workflows/build_push.yml@main
     with:
-      image_name:    telegram_prompt_api
-      sre_agent_url: ${{ vars.SRE_AGENT_URL }}
-      env_json: >-
-        {
-          "DATABASE_URL": "${{ secrets.DATABASE_URL }}",
-          "TELEGRAM_BOT_TOKEN": "${{ secrets.TELEGRAM_BOT_TOKEN }}",
-          "TELEGRAM_TARGET_CHAT_ID": "${{ secrets.TELEGRAM_TARGET_CHAT_ID }}",
-          "TELEGRAM_WEBHOOK_SECRET": "${{ secrets.TELEGRAM_WEBHOOK_SECRET }}",
-          "TELEGRAM_MESSAGE_PARSE_MODE": "${{ vars.TELEGRAM_MESSAGE_PARSE_MODE }}",
-          "TELEGRAM_USE_WEBHOOK": "${{ vars.TELEGRAM_USE_WEBHOOK }}",
-          "PUBLIC_WEBHOOK_URL": "${{ vars.PUBLIC_WEBHOOK_URL }}",
-          "CALLBACK_SIGNING_SECRET": "${{ secrets.CALLBACK_SIGNING_SECRET }}",
-          "CLEAN_ON_BOOT": "${{ vars.CLEAN_ON_BOOT }}"
-        }
+      image_name: telegram_prompt_api
     secrets:
       token: ${{ secrets.GITHUB_TOKEN }}
+
+  notify:
+    needs: build-push
+    runs-on: self-hosted
+    steps:
+      - name: Notify SRE Agent
+        shell: powershell
+        env:
+          IMAGE:                    ${{ needs.build-push.outputs.image }}
+          SHA:                      ${{ github.sha }}
+          REPO:                     ${{ github.repository }}
+          REF:                      ${{ github.ref_name }}
+          SRE_URL:                  ${{ vars.SRE_AGENT_URL }}
+          TELEGRAM_BOT_TOKEN:       ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_TARGET_CHAT_ID:  ${{ secrets.TELEGRAM_TARGET_CHAT_ID }}
+          TELEGRAM_WEBHOOK_SECRET:  ${{ secrets.TELEGRAM_WEBHOOK_SECRET }}
+          DATABASE_URL:             ${{ secrets.DATABASE_URL }}
+          CALLBACK_SIGNING_SECRET:  ${{ secrets.CALLBACK_SIGNING_SECRET }}
+          TELEGRAM_MESSAGE_PARSE_MODE: ${{ vars.TELEGRAM_MESSAGE_PARSE_MODE }}
+          TELEGRAM_USE_WEBHOOK:     ${{ vars.TELEGRAM_USE_WEBHOOK }}
+          PUBLIC_WEBHOOK_URL:       ${{ vars.PUBLIC_WEBHOOK_URL }}
+          CLEAN_ON_BOOT:            ${{ vars.CLEAN_ON_BOOT }}
+        run: |
+          $payload = @{
+            repo  = $env:REPO
+            image = $env:IMAGE
+            sha   = $env:SHA
+            ref   = $env:REF
+            env   = @{
+              TELEGRAM_BOT_TOKEN          = $env:TELEGRAM_BOT_TOKEN
+              TELEGRAM_TARGET_CHAT_ID     = $env:TELEGRAM_TARGET_CHAT_ID
+              TELEGRAM_WEBHOOK_SECRET     = $env:TELEGRAM_WEBHOOK_SECRET
+              DATABASE_URL                = $env:DATABASE_URL
+              CALLBACK_SIGNING_SECRET     = $env:CALLBACK_SIGNING_SECRET
+              TELEGRAM_MESSAGE_PARSE_MODE = $env:TELEGRAM_MESSAGE_PARSE_MODE
+              TELEGRAM_USE_WEBHOOK        = $env:TELEGRAM_USE_WEBHOOK
+              PUBLIC_WEBHOOK_URL          = $env:PUBLIC_WEBHOOK_URL
+              CLEAN_ON_BOOT               = $env:CLEAN_ON_BOOT
+            }
+          } | ConvertTo-Json -Compress -Depth 5
+
+          Write-Host "Notifying SRE Agent at $env:SRE_URL/deploy"
+          $response = Invoke-RestMethod -Method POST -Uri "$env:SRE_URL/deploy" -ContentType "application/json" -Body $payload
+          Write-Host "Response: $($response | ConvertTo-Json)"
