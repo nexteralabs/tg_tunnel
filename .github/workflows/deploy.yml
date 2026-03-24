@@ -15,5 +15,17 @@ jobs:
     with:
       image_name:    telegram_prompt_api
       sre_agent_url: ${{ vars.SRE_AGENT_URL }}
+      env_json: >-
+        {
+          "DATABASE_URL": "${{ secrets.DATABASE_URL }}",
+          "TELEGRAM_BOT_TOKEN": "${{ secrets.TELEGRAM_BOT_TOKEN }}",
+          "TELEGRAM_TARGET_CHAT_ID": "${{ secrets.TELEGRAM_TARGET_CHAT_ID }}",
+          "TELEGRAM_WEBHOOK_SECRET": "${{ secrets.TELEGRAM_WEBHOOK_SECRET }}",
+          "TELEGRAM_MESSAGE_PARSE_MODE": "${{ vars.TELEGRAM_MESSAGE_PARSE_MODE }}",
+          "TELEGRAM_USE_WEBHOOK": "${{ vars.TELEGRAM_USE_WEBHOOK }}",
+          "PUBLIC_WEBHOOK_URL": "${{ vars.PUBLIC_WEBHOOK_URL }}",
+          "CALLBACK_SIGNING_SECRET": "${{ secrets.CALLBACK_SIGNING_SECRET }}",
+          "CLEAN_ON_BOOT": "${{ vars.CLEAN_ON_BOOT }}"
+        }
     secrets:
       token: ${{ secrets.GITHUB_TOKEN }}
