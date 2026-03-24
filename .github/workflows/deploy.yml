@@ -15,7 +15,7 @@ jobs:
     with:
       image_name: telegram_prompt_api
     secrets:
-      token: ${{ secrets.GITHUB_TOKEN }}
+      token: ${{ secrets.TOKEN }}
 
   notify:
     needs: build-push
