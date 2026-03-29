@@ -1,5 +1,8 @@
 # Telegram Prompt & Channel Gateway
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![CI](https://github.com/NexteraLabs/telegram_prompt_api/actions/workflows/ci.yml/badge.svg)](https://github.com/NexteraLabs/telegram_prompt_api/actions/workflows/ci.yml)
+
 Two services in one:
 1. **Prompt API**: Post prompts into Telegram (channel/group), collect replies (buttons or `ID:#123 reply text`), and notify callers.
 2. **Channel Gateway**: Bidirectional messaging gateway for multiple AI assistants to communicate with Telegram channels via assigned bots.
@@ -81,9 +84,9 @@ Create a prompt:
 curl -X POST http://localhost:8100/v1/prompts \
   -H 'Content-Type: application/json' \
   -d '{
-    "text":"Approve deployment?",
-    "options":["Yes","No"],
-    "correlation_id":"deploy-42"
+    "text": "Approve deployment?",
+    "options": ["Yes", "No"],
+    "correlation_id": "deploy-42"
   }'
 ```
 
@@ -94,7 +97,7 @@ curl http://localhost:8100/v1/prompts/pending
 
 Get by id:
 ```bash
-curl http://localhost:8100/v1/prompts/#123
+curl http://localhost:8100/v1/prompts/%23123
 ```
 
 ## Answering by text
@@ -125,19 +128,12 @@ uv run prompt-cli fresh_start
 - The pattern `ID:#123 your text` is only acted upon by the bot; nothing else is parsed.
 - For production, use `docker compose up -d` to run the API in a container.
 
+## Contributing
 
-## test payload
+Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for setup instructions, coding conventions, and the PR checklist.
 
-{
-  "chat_id": "-1002954473836",
-  "text": "Do you approve this deployment to production?",
-  "media_path": "C:\\MediaGenerator\\data\\images\\Strong_bones_image_portrait.png",
-  "options": [
-    "Approve",
-    "Reject"
-  ],
-  "allow_text": false,
-  "callback_url": "https://your-app.com/webhook/prompts",
-  "correlation_id": "deploy-2024-001",
-  "ttl_sec": 3600
-}
+For security issues, see [.github/SECURITY.md](.github/SECURITY.md) — do not open a public issue.
+
+## License
+
+[MIT](LICENSE) — Copyright (c) 2026 Nextera Labs

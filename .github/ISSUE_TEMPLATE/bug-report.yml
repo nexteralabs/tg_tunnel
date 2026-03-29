@@ -1,0 +1,55 @@
+name: Bug Report
+description: Report a bug in the API, CLI, channels, or prompts
+labels: ["type: bug", "status: needs-triage"]
+body:
+  - type: dropdown
+    id: component
+    attributes:
+      label: Component
+      description: Which part of the system is affected?
+      options:
+        - Prompt API
+        - Channel Gateway
+        - CLI
+        - Docker / deployment
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: What happened? What did you expect instead?
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to Reproduce
+      placeholder: |
+        1. Register a channel with /register-channel
+        2. Send a message via /send
+        3. See error...
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      placeholder: |
+        - Python version:
+        - OS:
+        - Deployment: local / Docker
+        - tg-prompt-api version:
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Error Output
+      description: Paste any error messages or logs
+      render: shell
