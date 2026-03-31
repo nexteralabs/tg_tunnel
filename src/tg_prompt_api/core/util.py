@@ -30,9 +30,7 @@ def validate_callback_url(url: str) -> None:
     parsed = urlparse(url)
 
     if parsed.scheme not in ("http", "https"):
-        raise ValueError(
-            f"Callback URL scheme must be http or https, got '{parsed.scheme}'"
-        )
+        raise ValueError(f"Callback URL scheme must be http or https, got '{parsed.scheme}'")
 
     hostname = parsed.hostname
     if not hostname:

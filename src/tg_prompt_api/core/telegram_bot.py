@@ -71,7 +71,9 @@ async def post_prompt_to_chat(
                 # Use simple option IDs like "1", "2", etc.
                 opt_id = str(i + 1)
                 await prompt_models.add_option_map(aconn, prompt_id, opt_id, label)
-                rows.append([InlineKeyboardButton(text=label, callback_data=f"{prompt_id}:{opt_id}")])
+                rows.append(
+                    [InlineKeyboardButton(text=label, callback_data=f"{prompt_id}:{opt_id}")]
+                )
         kb = InlineKeyboardMarkup(inline_keyboard=rows)
 
     # Use specified bot token or default bot
@@ -97,7 +99,9 @@ async def post_prompt_to_chat(
         media_to_send = None
 
     # Send message with retry logic
-    msg = await _send_telegram_message_with_retry(current_bot, target_chat_id, text, media_to_send, kb)
+    msg = await _send_telegram_message_with_retry(
+        current_bot, target_chat_id, text, media_to_send, kb
+    )
 
     async for aconn in get_conn():
         await prompt_models.set_message_id(aconn, prompt_id, msg.message_id)
@@ -109,7 +113,9 @@ async def post_prompt_to_chat(
     wait=wait_exponential(multiplier=1, min=1, max=10),
     reraise=True,
 )
-async def _send_telegram_message_with_retry(bot, target_chat_id, text, media: str | bytes | None, kb):
+async def _send_telegram_message_with_retry(
+    bot, target_chat_id, text, media: str | bytes | None, kb
+):
     """
     Send message to Telegram with retry logic.
 

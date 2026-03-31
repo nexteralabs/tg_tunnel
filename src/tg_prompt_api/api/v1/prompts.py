@@ -32,7 +32,9 @@ async def create_prompt_endpoint(p: schemas.PromptIn):
     except ValueError as e:
         raise HTTPException(400, str(e))
     except FileNotFoundError:
-        raise HTTPException(400, {"error": "file_not_found", "message": "The specified media file was not found."})
+        raise HTTPException(
+            400, {"error": "file_not_found", "message": "The specified media file was not found."}
+        )
     except RuntimeError as e:
         raise HTTPException(500, str(e))
 

@@ -19,9 +19,7 @@ async def _check_api_key(x_api_key: str | None = Header(default=None, alias="X-A
     """Validate API key when USE_AUTH is enabled."""
     if not settings.USE_AUTH:
         return
-    if x_api_key is None or not hmac.compare_digest(
-        x_api_key, settings.API_KEY.get_secret_value()
-    ):
+    if x_api_key is None or not hmac.compare_digest(x_api_key, settings.API_KEY.get_secret_value()):
         raise HTTPException(401, "Invalid or missing API key")
 
 

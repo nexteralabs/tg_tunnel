@@ -28,9 +28,7 @@ def schedule_callback(callback_url: str, payload: dict) -> None:
             await notify_callback(callback_url, payload)
         except Exception:
             prompt_id = payload.get("prompt_id", payload.get("id", "unknown"))
-            logger.exception(
-                "Failed to send callback prompt_id=%s to %s", prompt_id, callback_url
-            )
+            logger.exception("Failed to send callback prompt_id=%s to %s", prompt_id, callback_url)
 
     task = asyncio.create_task(_run())
     _bg_tasks.add(task)
