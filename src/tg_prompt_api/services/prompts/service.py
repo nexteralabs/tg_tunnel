@@ -1,7 +1,7 @@
 """Business logic for prompt domain"""
 
 from ...core.db import get_conn
-from ...core.util import validate_media_path
+from ...core.util import validate_media_path, validate_callback_url
 from . import models
 
 
@@ -45,6 +45,13 @@ async def create_and_post_prompt(
             validate_media_path(media_path)
         except Exception:
             raise ValueError("Invalid media path")
+
+    # Validate callback URL to prevent SSRF
+    if callback_url:
+        try:
+            validate_callback_url(str(callback_url))
+        except ValueError as exc:
+            raise ValueError(f"Invalid callback_url: {exc}") from exc
 
     # Resolve channel (default to __system_prompt__)
     resolved_channel_id = channel_id or "__system_prompt__"

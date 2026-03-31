@@ -12,6 +12,7 @@ from .db import get_conn
 bot = None
 dp = None
 _bots = {}  # Cache for multiple bot instances (for channels)
+_bots_lock = asyncio.Lock()
 
 
 def get_bot():
@@ -34,22 +35,23 @@ def get_bot():
     return bot, dp
 
 
-def get_bot_by_token(token: str) -> Bot:
+async def get_bot_by_token(token: str) -> Bot:
     """Get or create bot for any token (for channels)."""
-    if token not in _bots:
-        _bots[token] = Bot(token=token, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
-    return _bots[token]
+    async with _bots_lock:
+        if token not in _bots:
+            _bots[token] = Bot(token=token, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
+        return _bots[token]
 
 
 async def release_bot(token: str) -> None:
     """Remove a bot from the cache, closing its session if open."""
-    if token in _bots:
-        cached = _bots[token]
-        try:
-            await cached.session.close()
-        except Exception:
-            pass
-        del _bots[token]
+    async with _bots_lock:
+        if token in _bots:
+            cached = _bots.pop(token)
+            try:
+                await cached.session.close()
+            except Exception:
+                pass
 
 
 async def post_prompt_to_chat(
@@ -78,7 +80,7 @@ async def post_prompt_to_chat(
 
     # Use specified bot token or default bot
     if bot_token:
-        current_bot = get_bot_by_token(bot_token)
+        current_bot = await get_bot_by_token(bot_token)
     else:
         current_bot, _ = get_bot()
 
@@ -91,6 +93,12 @@ async def post_prompt_to_chat(
         if isinstance(media, UploadFile):
             media_to_send = await media.read()
         elif isinstance(media, str) and os.path.exists(media) and os.path.isfile(media):
+            file_size = await asyncio.to_thread(os.path.getsize, media)
+            max_bytes = settings.MAX_MEDIA_SIZE_MB * 1024 * 1024
+            if file_size > max_bytes:
+                raise ValueError(
+                    f"File size {file_size // (1024 * 1024)} MB exceeds the {settings.MAX_MEDIA_SIZE_MB} MB limit"
+                )
             media_to_send = await asyncio.to_thread(lambda: open(media, "rb").read())
         else:
             # URL string — pass as-is

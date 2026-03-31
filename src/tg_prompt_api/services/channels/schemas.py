@@ -2,7 +2,7 @@
 
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, SecretStr
 
 
 class ChannelRegisterIn(BaseModel):
@@ -10,7 +10,7 @@ class ChannelRegisterIn(BaseModel):
 
     channel_id: str = Field(..., description="Unique channel identifier")
     telegram_chat_id: str = Field(..., description="Telegram chat ID")
-    bot_token: str = Field(..., description="Telegram bot token for this channel")
+    bot_token: SecretStr = Field(..., description="Telegram bot token for this channel")
     callback_url: str | None = Field(
         None, description="Callback URL for message forwarding (required for MESSAGE channels)"
     )

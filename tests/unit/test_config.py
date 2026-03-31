@@ -16,6 +16,7 @@ def _base_env(monkeypatch, **overrides):
         "TELEGRAM_TARGET_CHAT_ID": "-1001234567890",
         "DATABASE_URL": "postgresql+psycopg://postgres:test@localhost:5432/test_db",
         "CALLBACK_SIGNING_SECRET": "test-signing-secret-32-chars-long!",
+        "TELEGRAM_WEBHOOK_SECRET": "test-webhook-secret-32-chars-long!",
     }
     base.update(overrides)
     for key, value in base.items():
@@ -85,3 +86,21 @@ class TestSettingsValidation:
         monkeypatch.delenv("CLEAN_ON_BOOT", raising=False)
         s = Settings()
         assert s.CLEAN_ON_BOOT is True
+
+    def test_default_callback_signing_secret_raises(self, monkeypatch):
+        """Weak default CALLBACK_SIGNING_SECRET must abort startup, not just warn."""
+        _base_env(monkeypatch, CALLBACK_SIGNING_SECRET="super-secret")
+        with pytest.raises(ValidationError, match="CALLBACK_SIGNING_SECRET"):
+            Settings(_env_file=None)
+
+    def test_default_webhook_secret_raises(self, monkeypatch):
+        """Weak default TELEGRAM_WEBHOOK_SECRET must abort startup, not just warn."""
+        _base_env(monkeypatch, TELEGRAM_WEBHOOK_SECRET="change-me")
+        with pytest.raises(ValidationError, match="TELEGRAM_WEBHOOK_SECRET"):
+            Settings(_env_file=None)
+
+    def test_strong_secrets_accepted(self, monkeypatch):
+        """Non-default secrets pass validation without error."""
+        _base_env(monkeypatch)
+        s = Settings()
+        assert s.CALLBACK_SIGNING_SECRET.get_secret_value() == "test-signing-secret-32-chars-long!"

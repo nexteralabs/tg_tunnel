@@ -57,16 +57,16 @@ def validate_media_path(path: str) -> None:
     allowed = Path(settings.MEDIA_ALLOWED_DIR).resolve()
     target = Path(path).resolve()
 
-    if not str(target).startswith(str(allowed)):
-        raise ValueError(
-            f"Path '{path}' is outside the allowed media directory '{settings.MEDIA_ALLOWED_DIR}'"
-        )
+    try:
+        target.relative_to(allowed)
+    except ValueError:
+        raise ValueError("Path is outside the allowed media directory")
 
 
 def sign_body(body: bytes) -> str:
-    sig = hmac.new(
+    sig = hmac.digest(
         settings.CALLBACK_SIGNING_SECRET.get_secret_value().encode(), body, hashlib.sha256
-    ).hexdigest()
+    ).hex()
     return f"sha256={sig}"
 
 

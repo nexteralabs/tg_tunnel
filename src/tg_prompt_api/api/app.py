@@ -19,6 +19,8 @@ async def _check_api_key(x_api_key: str | None = Header(default=None, alias="X-A
     """Validate API key when USE_AUTH is enabled."""
     if not settings.USE_AUTH:
         return
+    if settings.API_KEY is None:
+        raise HTTPException(500, "Authentication misconfigured")
     if x_api_key is None or not hmac.compare_digest(x_api_key, settings.API_KEY.get_secret_value()):
         raise HTTPException(401, "Invalid or missing API key")
 
@@ -56,10 +58,20 @@ async def _lifespan(app: FastAPI):
 
 def create_app() -> FastAPI:
     """Create and configure the FastAPI application."""
-    app = FastAPI(title="Telegram Prompt & Channel Gateway", lifespan=_lifespan)
+    app = FastAPI(
+        title="Telegram Prompt & Channel Gateway",
+        lifespan=_lifespan,
+        docs_url="/docs" if settings.ENABLE_DOCS else None,
+        redoc_url="/redoc" if settings.ENABLE_DOCS else None,
+        openapi_url="/openapi.json" if settings.ENABLE_DOCS else None,
+    )
 
     app.include_router(prompts.router, prefix="/v1", dependencies=[Depends(_check_api_key)])
     app.include_router(channels.router, dependencies=[Depends(_check_api_key)])
+
+    @app.get("/healthz", include_in_schema=False)
+    async def healthz():
+        return {"status": "ok"}
 
     return app
 

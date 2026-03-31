@@ -1,4 +1,3 @@
-import warnings
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import AnyUrl, SecretStr, field_validator, model_validator
 
@@ -26,6 +25,9 @@ class Settings(BaseSettings):
     API_KEY: SecretStr | None = None
 
     MEDIA_ALLOWED_DIR: str | None = None
+    MAX_MEDIA_SIZE_MB: int = 50  # Maximum file size for media_path uploads
+
+    ENABLE_DOCS: bool = False  # Expose /docs, /redoc, /openapi.json (disable in prod)
 
     # Channel Gateway settings
     CHANNEL_CALLBACK_MAX_RETRIES: int = 3
@@ -43,16 +45,14 @@ class Settings(BaseSettings):
     @model_validator(mode="after")
     def validate_secrets_and_auth(self) -> "Settings":
         if self.CALLBACK_SIGNING_SECRET.get_secret_value() == _DEFAULT_SIGNING_SECRET:
-            warnings.warn(
-                "CALLBACK_SIGNING_SECRET is still set to the default value 'super-secret'. "
-                "Set a strong secret in production.",
-                stacklevel=2,
+            raise ValueError(
+                "CALLBACK_SIGNING_SECRET is still set to the default value. "
+                "Set a strong unique secret in your .env file."
             )
         if self.TELEGRAM_WEBHOOK_SECRET.get_secret_value() == _DEFAULT_WEBHOOK_SECRET:
-            warnings.warn(
-                "TELEGRAM_WEBHOOK_SECRET is still set to the default value 'change-me'. "
-                "Set a strong secret in production.",
-                stacklevel=2,
+            raise ValueError(
+                "TELEGRAM_WEBHOOK_SECRET is still set to the default value. "
+                "Set a strong unique secret in your .env file."
             )
         if self.USE_AUTH and self.API_KEY is None:
             raise ValueError("API_KEY must be set when USE_AUTH=true")

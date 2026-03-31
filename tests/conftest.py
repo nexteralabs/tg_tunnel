@@ -8,3 +8,4 @@ os.environ.setdefault("TELEGRAM_BOT_TOKEN", "123456789:AABBCCDDEEFFaabbccddeeff-
 os.environ.setdefault("TELEGRAM_TARGET_CHAT_ID", "-1001234567890")
 os.environ.setdefault("DATABASE_URL", "postgresql+psycopg://postgres:test@localhost:5432/test_db")
 os.environ.setdefault("CALLBACK_SIGNING_SECRET", "test-signing-secret-32-chars-long!")
+os.environ.setdefault("TELEGRAM_WEBHOOK_SECRET", "test-webhook-secret-32-chars-long!")

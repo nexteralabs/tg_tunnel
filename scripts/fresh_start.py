@@ -1,9 +1,9 @@
 import os
 import psycopg
 
-DATABASE_URL = os.environ.get(
-    "DATABASE_URL", "postgresql+psycopg://postgres:postAdmin@localhost:5432/tg_prompt_api"
-)
+DATABASE_URL = os.environ.get("DATABASE_URL")
+if not DATABASE_URL:
+    raise SystemExit("ERROR: DATABASE_URL environment variable is required")
 if DATABASE_URL.startswith("postgresql+"):
     DATABASE_URL = DATABASE_URL.replace("postgresql+psycopg", "postgresql")
 

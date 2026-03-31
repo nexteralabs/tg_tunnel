@@ -7,6 +7,7 @@ from .util import sign_body, retryable_http_post, resolve_callback_url
 logger = logging.getLogger(__name__)
 
 _bg_tasks: set[asyncio.Task] = set()
+_MAX_PENDING_CALLBACKS = 200
 
 
 async def notify_callback(callback_url: str, payload: dict):
@@ -22,6 +23,15 @@ async def notify_callback(callback_url: str, payload: dict):
 
 def schedule_callback(callback_url: str, payload: dict) -> None:
     """Fire-and-forget: schedule notify_callback as a background asyncio Task."""
+
+    if len(_bg_tasks) >= _MAX_PENDING_CALLBACKS:
+        prompt_id = payload.get("prompt_id", payload.get("id", "unknown"))
+        logger.error(
+            "Callback queue full (%d pending), dropping callback for prompt_id=%s",
+            len(_bg_tasks),
+            prompt_id,
+        )
+        return
 
     async def _run():
         try:

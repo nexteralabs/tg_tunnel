@@ -22,7 +22,7 @@ async def send_to_channel(channel_id: str, text: str) -> None:
     if not channel:
         raise ValueError(f"Channel {channel_id} not registered")
 
-    bot = get_bot_by_token(channel["bot_token"])
+    bot = await get_bot_by_token(channel["bot_token"])
     await bot.send_message(chat_id=channel["telegram_chat_id"], text=text)
 
 
@@ -64,7 +64,7 @@ async def forward_to_callback(channel: dict, message_event: dict) -> bool:
 
 async def notify_offline(channel: dict) -> None:
     """Send offline notification to channel (matches MVP reference)"""
-    bot = get_bot_by_token(channel["bot_token"])
+    bot = await get_bot_by_token(channel["bot_token"])
     # Send emoji to Telegram (OK), but don't log emoji (Windows constraint)
     notification_text = f"\u26a0\ufe0f {settings.CHANNEL_OFFLINE_NOTIFICATION}"
     await bot.send_message(chat_id=channel["telegram_chat_id"], text=notification_text)

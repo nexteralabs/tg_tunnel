@@ -17,7 +17,7 @@ app = typer.Typer(add_completion=False)
 
 
 @app.command("run_api")
-def run_api(host: str = "0.0.0.0", port: int = 8100):
+def run_api(host: str = "127.0.0.1", port: int = 8100):
     """Run FastAPI server."""
     set_event_loop_policy()
     uvicorn.run("tg_prompt_api.api.app:app", host=host, port=port, reload=False)

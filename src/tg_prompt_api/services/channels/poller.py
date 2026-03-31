@@ -12,34 +12,35 @@ logger = logging.getLogger(__name__)
 
 # Track polling tasks
 _polling_tasks: dict[str, asyncio.Task] = {}
+_polling_lock = asyncio.Lock()
 
 
 async def start_polling(channel_id: str) -> None:
     """Start polling for a channel (idempotent - cancels existing task)"""
-    # Cancel existing task if running
-    if channel_id in _polling_tasks:
-        _polling_tasks[channel_id].cancel()
-        try:
-            await _polling_tasks[channel_id]
-        except asyncio.CancelledError:
-            pass
+    async with _polling_lock:
+        if channel_id in _polling_tasks:
+            _polling_tasks[channel_id].cancel()
+            try:
+                await _polling_tasks[channel_id]
+            except asyncio.CancelledError:
+                pass
 
-    # Start new polling task
-    task = asyncio.create_task(_poll_loop(channel_id))
-    _polling_tasks[channel_id] = task
-    logger.info("Polling started for channel %s", channel_id)
+        task = asyncio.create_task(_poll_loop(channel_id))
+        _polling_tasks[channel_id] = task
+        logger.info("Polling started for channel %s", channel_id)
 
 
 async def stop_polling(channel_id: str) -> None:
     """Stop polling for a channel"""
-    if channel_id in _polling_tasks:
-        _polling_tasks[channel_id].cancel()
-        try:
-            await _polling_tasks[channel_id]
-        except asyncio.CancelledError:
-            pass
-        del _polling_tasks[channel_id]
-        logger.info("Polling stopped for channel %s", channel_id)
+    async with _polling_lock:
+        if channel_id in _polling_tasks:
+            _polling_tasks[channel_id].cancel()
+            try:
+                await _polling_tasks[channel_id]
+            except asyncio.CancelledError:
+                pass
+            del _polling_tasks[channel_id]
+            logger.info("Polling stopped for channel %s", channel_id)
 
 
 async def restore_all_on_startup() -> None:
@@ -66,7 +67,7 @@ async def _poll_loop(channel_id: str) -> None:
     if not channel or not channel["is_active"]:
         return
 
-    bot = get_bot_by_token(channel["bot_token"])
+    bot = await get_bot_by_token(channel["bot_token"])
     offset = channel["last_update_id"]
     chat_id = channel["telegram_chat_id"]
     channel_type = channel.get("channel_type", "MESSAGE")

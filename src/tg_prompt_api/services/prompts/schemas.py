@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Annotated
 
 from pydantic import BaseModel, Field
 
@@ -15,6 +16,7 @@ class PromptIn(BaseModel):
         examples=["-1002954473836", "123456789"],
     )
     text: str = Field(
+        max_length=4096,
         description="The prompt message to send",
         examples=["Do you approve this deployment to production?"],
     )
@@ -28,9 +30,10 @@ class PromptIn(BaseModel):
         description="Optional local file path to image (server-side file)",
         examples=["/data/media/image.jpg"],
     )
-    options: list[str] | None = Field(
+    options: list[Annotated[str, Field(max_length=64)]] | None = Field(
         default=None,
-        description="Button options for quick responses",
+        max_length=10,
+        description="Button options for quick responses (max 10, each max 64 chars)",
         examples=[["Approve", "Reject"], ["Yes", "No", "Maybe"]],
     )
     allow_text: bool = Field(
@@ -43,6 +46,7 @@ class PromptIn(BaseModel):
     )
     correlation_id: str | None = Field(
         default=None,
+        max_length=255,
         description="Your reference ID for this prompt",
         examples=["deploy-2024-001", "approval-request-456"],
     )

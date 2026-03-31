@@ -26,7 +26,7 @@ async def register_channel(data: schemas.ChannelRegisterIn):
                 conn,
                 data.channel_id,
                 data.telegram_chat_id,
-                data.bot_token,
+                data.bot_token.get_secret_value(),
                 data.callback_url,
                 data.channel_type,
             )
@@ -37,7 +37,7 @@ async def register_channel(data: schemas.ChannelRegisterIn):
             conn,
             data.channel_id,
             data.telegram_chat_id,
-            data.bot_token,
+            data.bot_token.get_secret_value(),
             data.callback_url,
             data.channel_type,
         )
