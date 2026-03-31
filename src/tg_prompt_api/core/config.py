@@ -25,7 +25,7 @@ class Settings(BaseSettings):
     API_KEY: SecretStr | None = None
 
     MEDIA_ALLOWED_DIR: str | None = None
-    MAX_MEDIA_SIZE_MB: int = 50  # Maximum file size for media_path uploads
+    MAX_MEDIA_SIZE_MB: int = 2  # Maximum file size for media_path uploads (Telegram photo limit)
 
     ENABLE_DOCS: bool = False  # Expose /docs, /redoc, /openapi.json (disable in prod)
 
