@@ -160,9 +160,6 @@ async def _handle_button_callback(callback_query, bot):
             await callback_query.answer("expired")
             return
 
-        # Get prompt details for confirmation
-        prompt_data = await prompt_models.get_prompt(conn, prompt_id)
-
         logger.info("Prompt %s answered with option: %s", prompt_id, label)
 
         # Mark as answered and schedule callback if applicable
