@@ -6,6 +6,7 @@ from aiogram.types import Message, CallbackQuery
 from aiogram.filters import Command
 
 from ...core.db import get_conn
+from ...core.notifier import schedule_callback
 from . import models
 
 router = Router()
@@ -33,7 +34,7 @@ async def text_response_handler(m: Message):
     prompt_id, reply_text = mobj.group(1), mobj.group(2)
 
     async for aconn in get_conn():
-        await models.mark_answered(
+        callback_info = await models.mark_answered(
             aconn,
             prompt_id,
             answer_type="text",
@@ -41,6 +42,10 @@ async def text_response_handler(m: Message):
             user_id=m.from_user.id if m.from_user else None,
             username=m.from_user.username if m.from_user else None,
         )
+
+    if callback_info is not None:
+        schedule_callback(callback_info["callback_url"], callback_info["payload"])
+
     await m.reply(f"Recorded answer for ID:{prompt_id}")  # No emoji for Windows
 
 
@@ -61,7 +66,7 @@ async def button_response_handler(cq: CallbackQuery):
         prompt_data = await models.get_prompt(aconn, pid)
         prompt_text = prompt_data["text"] if prompt_data else f"prompt {pid}"
 
-        await models.mark_answered(
+        callback_info = await models.mark_answered(
             aconn,
             pid,
             answer_type="option",
@@ -69,6 +74,9 @@ async def button_response_handler(cq: CallbackQuery):
             user_id=cq.from_user.id,
             username=cq.from_user.username,
         )
+
+    if callback_info is not None:
+        schedule_callback(callback_info["callback_url"], callback_info["payload"])
 
     # Send popup notification
     await cq.answer(f"Selected: {label}")
@@ -84,18 +92,14 @@ async def button_response_handler(cq: CallbackQuery):
     # Truncate prompt text if too long
     display_text = prompt_text[:50] + "..." if len(prompt_text) > 50 else prompt_text
 
-    # Get bot instance
-    from ...core.telegram_bot import get_bot
-
-    _bot, _ = get_bot()
-
-    await _bot.send_message(
+    # Use the bot that received the callback query (correct bot for multi-bot setups)
+    await cq.bot.send_message(
         chat_id=cq.message.chat.id, text=f"{style}: {display_text}", parse_mode="Markdown"
     )
 
     # Remove buttons
     try:
-        await _bot.edit_message_reply_markup(
+        await cq.bot.edit_message_reply_markup(
             chat_id=cq.message.chat.id, message_id=cq.message.message_id, reply_markup=None
         )
     except Exception:

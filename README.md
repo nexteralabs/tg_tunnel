@@ -67,15 +67,14 @@ uv run prompt-cli list_channels
 
 ## Long polling notes
 
-This project defaults to **long polling** (no public URL needed). On bot startup we:
-- **disable any existing webhook** and **drop pending updates**:
-  ```python
-  await bot.delete_webhook(drop_pending_updates=True)
-  ```
-- start polling with **explicit allowed updates**:
-  ```python
-  await dp.start_polling(bot, allowed_updates=["message","callback_query"])
-  ```
+This project uses **long polling** by default (no public URL needed). Each registered channel runs an independent polling loop that calls Telegram's `getUpdates` with a 30-second timeout.
+
+On startup, the server:
+1. Registers the default prompt channel (`__system_prompt__`)
+2. Restores polling for all previously active channels
+3. Each channel's poller loop runs as an `asyncio.Task` in the background
+
+To disable polling for a channel, use `DELETE /channels/{channel_id}`.
 
 ## Prompt API
 

@@ -1,5 +1,10 @@
-from pydantic_settings import BaseSettings
-from pydantic import AnyUrl, SecretStr, field_validator
+import warnings
+from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import AnyUrl, SecretStr, field_validator, model_validator
+
+
+_DEFAULT_SIGNING_SECRET = "super-secret"
+_DEFAULT_WEBHOOK_SECRET = "change-me"
 
 
 class Settings(BaseSettings):
@@ -9,13 +14,18 @@ class Settings(BaseSettings):
 
     TELEGRAM_USE_WEBHOOK: bool = False
     PUBLIC_WEBHOOK_URL: str | None = None
-    TELEGRAM_WEBHOOK_SECRET: SecretStr = SecretStr("change-me")
+    TELEGRAM_WEBHOOK_SECRET: SecretStr = SecretStr(_DEFAULT_WEBHOOK_SECRET)
 
-    DATABASE_URL: AnyUrl = "postgresql+psycopg://postgres:postgres@localhost:5432/tg_prompt_api"
+    DATABASE_URL: AnyUrl
 
-    CALLBACK_SIGNING_SECRET: SecretStr = SecretStr("super-secret")
+    CALLBACK_SIGNING_SECRET: SecretStr = SecretStr(_DEFAULT_SIGNING_SECRET)
 
     CLEAN_ON_BOOT: bool = True
+
+    USE_AUTH: bool = False
+    API_KEY: SecretStr | None = None
+
+    MEDIA_ALLOWED_DIR: str | None = None
 
     # Channel Gateway settings
     CHANNEL_CALLBACK_MAX_RETRIES: int = 3
@@ -25,15 +35,30 @@ class Settings(BaseSettings):
     @field_validator("TELEGRAM_BOT_TOKEN")
     @classmethod
     def validate_token_format(cls, v: SecretStr) -> SecretStr:
-        """Validate Telegram bot token format"""
         token = v.get_secret_value()
         if ":" not in token or len(token.split(":")[0]) < 8:
             raise ValueError("Invalid Telegram bot token format")
         return v
 
-    class Config:
-        env_file = ".env"
-        extra = "ignore"  # Ignore extra fields in .env file
+    @model_validator(mode="after")
+    def validate_secrets_and_auth(self) -> "Settings":
+        if self.CALLBACK_SIGNING_SECRET.get_secret_value() == _DEFAULT_SIGNING_SECRET:
+            warnings.warn(
+                "CALLBACK_SIGNING_SECRET is still set to the default value 'super-secret'. "
+                "Set a strong secret in production.",
+                stacklevel=2,
+            )
+        if self.TELEGRAM_WEBHOOK_SECRET.get_secret_value() == _DEFAULT_WEBHOOK_SECRET:
+            warnings.warn(
+                "TELEGRAM_WEBHOOK_SECRET is still set to the default value 'change-me'. "
+                "Set a strong secret in production.",
+                stacklevel=2,
+            )
+        if self.USE_AUTH and self.API_KEY is None:
+            raise ValueError("API_KEY must be set when USE_AUTH=true")
+        return self
+
+    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
 
 settings = Settings()

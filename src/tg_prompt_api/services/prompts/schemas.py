@@ -1,5 +1,6 @@
+from datetime import datetime
+
 from pydantic import BaseModel, Field
-from typing import Optional, List
 
 
 class PromptIn(BaseModel):
@@ -17,17 +18,17 @@ class PromptIn(BaseModel):
         description="The prompt message to send",
         examples=["Do you approve this deployment to production?"],
     )
-    media_url: Optional[str] = Field(
+    media_url: str | None = Field(
         default=None,
         description="Optional image URL to include with the prompt",
         examples=["https://i.imgur.com/abc123.jpg", "https://cdn.example.com/image.png"],
     )
-    media_path: Optional[str] = Field(
+    media_path: str | None = Field(
         default=None,
         description="Optional local file path to image (server-side file)",
-        examples=["C:\\images\\screenshot.png", "/home/user/image.jpg", "./temp/photo.png"],
+        examples=["/data/media/image.jpg"],
     )
-    options: Optional[List[str]] = Field(
+    options: list[str] | None = Field(
         default=None,
         description="Button options for quick responses",
         examples=[["Approve", "Reject"], ["Yes", "No", "Maybe"]],
@@ -35,17 +36,17 @@ class PromptIn(BaseModel):
     allow_text: bool = Field(
         default=False, description="Allow text responses via ID:prompt_id format"
     )
-    callback_url: Optional[str] = Field(
+    callback_url: str | None = Field(
         default=None,
         description="Webhook URL for response notifications",
         examples=["https://your-app.com/webhook/prompts"],
     )
-    correlation_id: Optional[str] = Field(
+    correlation_id: str | None = Field(
         default=None,
         description="Your reference ID for this prompt",
         examples=["deploy-2024-001", "approval-request-456"],
     )
-    ttl_sec: Optional[int] = Field(
+    ttl_sec: int | None = Field(
         default=3600,
         ge=0,
         le=7 * 24 * 3600,
@@ -66,6 +67,6 @@ class PromptRow(BaseModel):
     message_id: int | None
     text: str
     state: str
-    created_at: str
-    expires_at: str | None
+    created_at: datetime
+    expires_at: datetime | None
     answer: dict | None

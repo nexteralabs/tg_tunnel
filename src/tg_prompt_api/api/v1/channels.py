@@ -15,6 +15,7 @@ async def register_channel(data: schemas.ChannelRegisterIn):
     if data.channel_type == "MESSAGE" and not data.callback_url:
         raise HTTPException(400, "MESSAGE channels require callback_url")
 
+    existing = None
     # Check if channel already exists and is active
     async for conn in get_conn():
         existing = await models.get_channel(conn, data.channel_id)
@@ -60,6 +61,7 @@ async def send_message(data: schemas.ChannelSendIn):
 @router.get("/channels")  # Exact match from MVP reference
 async def list_channels():
     """List active channels"""
+    channels: list[dict] = []
     async for conn in get_conn():
         channels = await models.list_active_channels(conn)
 
@@ -72,11 +74,12 @@ async def list_channels():
 @router.delete("/channels/{channel_id}")  # Exact match from MVP reference
 async def unregister_channel(channel_id: str):
     """Stop polling and deactivate channel"""
+    channel = None
     async for conn in get_conn():
         channel = await models.get_channel(conn, channel_id)
 
     if not channel:
-        return {"error": f"Channel {channel_id} not found."}
+        raise HTTPException(404, f"Channel {channel_id} not found.")
 
     # Stop polling
     await poller.stop_polling(channel_id)

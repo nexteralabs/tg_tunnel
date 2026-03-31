@@ -5,6 +5,7 @@ import uvicorn
 import psycopg
 
 from .core.config import settings
+from .core.event_loop import set_event_loop_policy
 
 # Removed old bot polling imports - now handled by channel system
 from .core.db import get_conn
@@ -18,10 +19,7 @@ app = typer.Typer(add_completion=False)
 @app.command("run_api")
 def run_api(host: str = "0.0.0.0", port: int = 8100):
     """Run FastAPI server."""
-    # Fix Windows event loop policy for psycopg
-    if os.name == "nt":  # Windows
-        asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
-
+    set_event_loop_policy()
     uvicorn.run("tg_prompt_api.api.app:app", host=host, port=port, reload=False)
 
 
@@ -86,13 +84,12 @@ def init_channels():
 @app.command("list_channels")
 def list_channels_cmd():
     """List registered channels"""
-    # Fix Windows event loop policy for psycopg
-    if os.name == "nt":  # Windows
-        asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+    set_event_loop_policy()
 
     async def _list():
         from .services.channels.models import list_active_channels
 
+        channels: list[dict] = []
         async for conn in get_conn():
             channels = await list_active_channels(conn)
 

@@ -41,24 +41,15 @@ def get_bot_by_token(token: str) -> Bot:
     return _bots[token]
 
 
-async def manual_polling(bot, dp):
-    """Manual polling implementation to avoid aiogram's internal conflicts."""
-    offset = 0
-
-    while True:
+async def release_bot(token: str) -> None:
+    """Remove a bot from the cache, closing its session if open."""
+    if token in _bots:
+        cached = _bots[token]
         try:
-            updates = await bot.get_updates(
-                offset=offset, timeout=10, allowed_updates=["message", "callback_query"]
-            )
-
-            for update in updates:
-                offset = max(offset, update.update_id + 1)
-                # Process update through dispatcher
-                await dp.feed_update(bot, update)
-
-        except Exception as e:
-            print(f"Polling error: {e}")
-            await asyncio.sleep(1)
+            await cached.session.close()
+        except Exception:
+            pass
+        del _bots[token]
 
 
 async def post_prompt_to_chat(
@@ -75,12 +66,12 @@ async def post_prompt_to_chat(
     kb = None
     if options:
         rows = []
-        for i, label in enumerate(options):
-            # Use simple option IDs like "1", "2", etc.
-            opt_id = str(i + 1)
-            async for aconn in get_conn():
+        async for aconn in get_conn():
+            for i, label in enumerate(options):
+                # Use simple option IDs like "1", "2", etc.
+                opt_id = str(i + 1)
                 await prompt_models.add_option_map(aconn, prompt_id, opt_id, label)
-            rows.append([InlineKeyboardButton(text=label, callback_data=f"{prompt_id}:{opt_id}")])
+                rows.append([InlineKeyboardButton(text=label, callback_data=f"{prompt_id}:{opt_id}")])
         kb = InlineKeyboardMarkup(inline_keyboard=rows)
 
     # Use specified bot token or default bot
@@ -89,8 +80,24 @@ async def post_prompt_to_chat(
     else:
         current_bot, _ = get_bot()
 
+    # Pre-read media bytes before passing to the retry function
+    media_to_send: str | bytes | None
+    if media is not None:
+        from fastapi import UploadFile
+        import os
+
+        if isinstance(media, UploadFile):
+            media_to_send = await media.read()
+        elif isinstance(media, str) and os.path.exists(media) and os.path.isfile(media):
+            media_to_send = await asyncio.to_thread(lambda: open(media, "rb").read())
+        else:
+            # URL string — pass as-is
+            media_to_send = media
+    else:
+        media_to_send = None
+
     # Send message with retry logic
-    msg = await _send_telegram_message_with_retry(current_bot, target_chat_id, text, media, kb)
+    msg = await _send_telegram_message_with_retry(current_bot, target_chat_id, text, media_to_send, kb)
 
     async for aconn in get_conn():
         await prompt_models.set_message_id(aconn, prompt_id, msg.message_id)
@@ -102,48 +109,26 @@ async def post_prompt_to_chat(
     wait=wait_exponential(multiplier=1, min=1, max=10),
     reraise=True,
 )
-async def _send_telegram_message_with_retry(bot, target_chat_id, text, media, kb):
+async def _send_telegram_message_with_retry(bot, target_chat_id, text, media: str | bytes | None, kb):
     """
     Send message to Telegram with retry logic.
 
     WARNING: Retries can cause duplicate messages if the send succeeds but the response times out.
     Reduced to 3 attempts to minimize duplicates during network issues.
+
+    media must be pre-read bytes, a URL string, or None. UploadFile objects must be
+    read before calling this function to avoid EOF on retry attempts.
     """
-    if media:
-        # Check if media is an UploadFile object, local file path, or URL string
-        from fastapi import UploadFile
-        import os
-
-        if isinstance(media, UploadFile):
-            # Handle uploaded file
-            # Read file content for sending to Telegram
-            file_content = await media.read()
-            # Reset file position for potential re-reading
-            await media.seek(0)
-
-            # Send photo with file content
+    if media is not None:
+        if isinstance(media, bytes):
             from aiogram.types import BufferedInputFile
 
-            photo = BufferedInputFile(file_content, filename=media.filename or "image.jpg")
-            return await bot.send_photo(
-                chat_id=target_chat_id, photo=photo, caption=text, reply_markup=kb
-            )
-        elif isinstance(media, str) and os.path.exists(media) and os.path.isfile(media):
-            # Handle local file path
-            # Read local file content
-            with open(media, "rb") as f:
-                file_content = f.read()
-
-            # Send photo with file content
-            from aiogram.types import BufferedInputFile
-
-            filename = os.path.basename(media)
-            photo = BufferedInputFile(file_content, filename=filename)
+            photo = BufferedInputFile(media, filename="image.jpg")
             return await bot.send_photo(
                 chat_id=target_chat_id, photo=photo, caption=text, reply_markup=kb
             )
         else:
-            # Handle URL string
+            # URL string
             return await bot.send_photo(
                 chat_id=target_chat_id, photo=media, caption=text, reply_markup=kb
             )

@@ -1,5 +1,7 @@
 """Pydantic schemas for channels"""
 
+from typing import Literal
+
 from pydantic import BaseModel, Field
 
 
@@ -12,7 +14,9 @@ class ChannelRegisterIn(BaseModel):
     callback_url: str | None = Field(
         None, description="Callback URL for message forwarding (required for MESSAGE channels)"
     )
-    channel_type: str = Field("MESSAGE", description="Channel type: MESSAGE or PROMPT")
+    channel_type: Literal["MESSAGE", "PROMPT"] = Field(
+        "MESSAGE", description="Channel type: MESSAGE or PROMPT"
+    )
 
 
 class ChannelSendIn(BaseModel):
