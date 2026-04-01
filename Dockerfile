@@ -8,7 +8,7 @@ COPY pyproject.toml uv.lock README.md ./
 COPY src/ src/
 COPY scripts/ scripts/
 
-RUN uv sync --frozen --no-dev
+RUN uv lock && uv sync --frozen --no-dev
 
 EXPOSE 8100
 
