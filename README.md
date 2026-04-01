@@ -4,28 +4,36 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 
-**A self-hosted HTTP gateway that gives your AI agents a direct line to Telegram — send prompts, collect answers, and bridge two-way conversations. No webhook infrastructure needed.**
+**The human-in-the-loop backbone for AI agent fleets. Give every agent its own Telegram channel, let them ask questions with interactive buttons, attach images, route answers back via signed webhooks — all over plain HTTP, no webhook infrastructure, no polling code, no DevOps.**
 
 ---
 
 ## Why TG-Tunnel?
 
-Modern AI agents are powerful but blind. They can plan, execute, and decide — but they have no way to pause and ask a human a question. TG-Tunnel closes that loop.
+Modern AI agents are powerful but isolated. They can plan, reason, and execute — but the moment they need a human decision, they're stuck. No clean way to pause, ask, and resume. No way to surface an alert with context. No dedicated channel per agent so conversations don't collide.
 
-With a single HTTP call your agent can:
+TG-Tunnel is the missing piece. One self-hosted service that turns Telegram into a full **human-agent communication bus**:
 
-- **Ask a yes/no question** and wait for the human's button tap to continue
-- **Receive free-text input** mid-workflow without polling or long-running sockets
-- **Route messages to specific operators** through dedicated channels per assistant
+- **Interactive decision gates** — send a question with up to 10 labeled buttons; your agent gets a signed webhook the instant a human taps one
+- **Free-text mid-workflow input** — accept typed replies without long-running sockets or polling loops
+- **Per-agent dedicated channels** — register unlimited bots, each with its own Telegram chat; finance-bot, ops-bot, support-bot all isolated and routed independently
+- **Rich media prompts** — attach images by URL, file upload, or local path; give humans the full picture before they decide
+- **Always-on bidirectional messaging** — agents send, humans reply, TG-Tunnel forwards everything back to your callback URL with automatic retry
+- **Signed callbacks** — every outbound webhook carries an HMAC-SHA256 signature so you know it came from TG-Tunnel, not an attacker
+- **Zero public endpoint required** — long-polling means it runs behind NAT, a firewall, or a laptop with no exposed port
 
-The result is a clean **human-in-the-loop** pattern that works with any language, any framework, and any orchestrator.
+The result: a clean **human-in-the-loop** pattern that works with any language, any framework, any orchestrator — in under 30 seconds.
 
 ```
-┌──────────────────┐     HTTP POST      ┌───────────────┐     Telegram API
-│  Your AI Agent   │ ─────────────────► │               │ ──────────────────►
-│  (any language)  │                    │  TG-Tunnel    │                    👤 Human
-│                  │ ◄───── webhook ─── │               │ ◄──────── tap ─────
-└──────────────────┘                    └───────────────┘
+                        ┌─────────────────────────────────────────────┐
+  Agent A  ─── HTTP ──► │                                             │ ──► 👤 Operator (buttons + image)
+  Agent B  ─── HTTP ──► │           TG-Tunnel                         │ ──► 👤 On-call (free text)
+  Agent C  ─── HTTP ──► │    (your self-hosted comms backbone)        │ ──► 👤 Manager (approval gate)
+                        │                                             │
+  Agent A  ◄─ webhook ─ │   signed callbacks · per-channel routing   │ ◄── tap / reply
+  Agent B  ◄─ webhook ─ │   HMAC auth · auto-retry · long-poll       │
+  Agent C  ◄─ webhook ─ │                                             │
+                        └─────────────────────────────────────────────┘
 ```
 
 ---
