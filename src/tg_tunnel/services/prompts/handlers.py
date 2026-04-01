@@ -52,11 +52,14 @@ async def text_response_handler(m: Message):
 @router.callback_query()
 async def button_response_handler(cq: CallbackQuery):
     """Handle button clicks on prompts"""
+    if not cq.data:
+        return await cq.answer("invalid")
     try:
         pid, oid = cq.data.split(":", 1)
     except Exception:
         return await cq.answer("invalid")
 
+    label: str | None = None
     async for aconn in get_conn():
         label = await models.resolve_option_label(aconn, pid, oid)
         if not label:
@@ -78,6 +81,7 @@ async def button_response_handler(cq: CallbackQuery):
     if callback_info is not None:
         schedule_callback(callback_info["callback_url"], callback_info["payload"])
 
+    assert label is not None  # guarded by early return above
     # Send popup notification
     await cq.answer(f"Selected: {label}")
 
@@ -93,14 +97,17 @@ async def button_response_handler(cq: CallbackQuery):
     display_text = prompt_text[:50] + "..." if len(prompt_text) > 50 else prompt_text
 
     # Use the bot that received the callback query (correct bot for multi-bot setups)
-    await cq.bot.send_message(
-        chat_id=cq.message.chat.id, text=f"{style}: {display_text}", parse_mode="Markdown"
-    )
-
-    # Remove buttons
-    try:
-        await cq.bot.edit_message_reply_markup(
-            chat_id=cq.message.chat.id, message_id=cq.message.message_id, reply_markup=None
+    if cq.bot and cq.message:
+        await cq.bot.send_message(
+            chat_id=cq.message.chat.id, text=f"{style}: {display_text}", parse_mode="Markdown"
         )
-    except Exception:
-        pass
+
+        # Remove buttons
+        try:
+            await cq.bot.edit_message_reply_markup(
+                chat_id=cq.message.chat.id,
+                message_id=cq.message.message_id,
+                reply_markup=None,
+            )
+        except Exception:
+            pass
