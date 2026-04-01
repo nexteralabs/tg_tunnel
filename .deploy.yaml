@@ -7,8 +7,8 @@ deploy:
 
 health:
   checks:
-    - name: api-channels
-      url: http://localhost:8100/channels
+    - name: healthz
+      url: http://localhost:8100/healthz
       method: GET
       expect_status: 200
   interval: 30s
@@ -20,7 +20,7 @@ monitoring:
     - type: docker_logs
       container: telegram-prompt-api
     - type: http
-      url: http://localhost:8100/channels
+      url: http://localhost:8100/healthz
       interval: 60s
 
   rules:

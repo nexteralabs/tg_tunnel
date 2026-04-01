@@ -93,11 +93,17 @@ class TestSettingsValidation:
         with pytest.raises(ValidationError, match="CALLBACK_SIGNING_SECRET"):
             Settings(_env_file=None)
 
-    def test_default_webhook_secret_raises(self, monkeypatch):
-        """Weak default TELEGRAM_WEBHOOK_SECRET must abort startup, not just warn."""
-        _base_env(monkeypatch, TELEGRAM_WEBHOOK_SECRET="change-me")
+    def test_default_webhook_secret_raises_only_in_webhook_mode(self, monkeypatch):
+        """Weak TELEGRAM_WEBHOOK_SECRET only aborts startup when TELEGRAM_USE_WEBHOOK=true."""
+        _base_env(monkeypatch, TELEGRAM_WEBHOOK_SECRET="change-me", TELEGRAM_USE_WEBHOOK="true")
         with pytest.raises(ValidationError, match="TELEGRAM_WEBHOOK_SECRET"):
             Settings(_env_file=None)
+
+    def test_default_webhook_secret_ok_in_polling_mode(self, monkeypatch):
+        """Default TELEGRAM_WEBHOOK_SECRET is fine when using long polling (no webhook)."""
+        _base_env(monkeypatch, TELEGRAM_WEBHOOK_SECRET="change-me", TELEGRAM_USE_WEBHOOK="false")
+        s = Settings(_env_file=None)
+        assert s.TELEGRAM_USE_WEBHOOK is False
 
     def test_strong_secrets_accepted(self, monkeypatch):
         """Non-default secrets pass validation without error."""

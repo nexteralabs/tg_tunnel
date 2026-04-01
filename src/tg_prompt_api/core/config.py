@@ -49,7 +49,10 @@ class Settings(BaseSettings):
                 "CALLBACK_SIGNING_SECRET is still set to the default value. "
                 "Set a strong unique secret in your .env file."
             )
-        if self.TELEGRAM_WEBHOOK_SECRET.get_secret_value() == _DEFAULT_WEBHOOK_SECRET:
+        if (
+            self.TELEGRAM_USE_WEBHOOK
+            and self.TELEGRAM_WEBHOOK_SECRET.get_secret_value() == _DEFAULT_WEBHOOK_SECRET
+        ):
             raise ValueError(
                 "TELEGRAM_WEBHOOK_SECRET is still set to the default value. "
                 "Set a strong unique secret in your .env file."
