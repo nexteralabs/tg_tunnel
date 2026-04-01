@@ -1,52 +1,62 @@
 """Channel polling management (matches MVP reference architecture)"""
 
 import asyncio
+import logging
 
 from ...core.db import get_conn
 from ...core.telegram_bot import get_bot_by_token
+from ...core.notifier import schedule_callback
 from . import models, service
+
+logger = logging.getLogger(__name__)
 
 # Track polling tasks
 _polling_tasks: dict[str, asyncio.Task] = {}
+_polling_lock = asyncio.Lock()
 
 
 async def start_polling(channel_id: str) -> None:
     """Start polling for a channel (idempotent - cancels existing task)"""
-    # Cancel existing task if running
-    if channel_id in _polling_tasks:
-        _polling_tasks[channel_id].cancel()
-        try:
-            await _polling_tasks[channel_id]
-        except asyncio.CancelledError:
-            pass
+    async with _polling_lock:
+        if channel_id in _polling_tasks:
+            _polling_tasks[channel_id].cancel()
+            try:
+                await _polling_tasks[channel_id]
+            except asyncio.CancelledError:
+                pass
 
-    # Start new polling task
-    task = asyncio.create_task(_poll_loop(channel_id))
-    _polling_tasks[channel_id] = task
-    print(f"[Channel] Polling started for channel {channel_id}")
+        task = asyncio.create_task(_poll_loop(channel_id))
+        _polling_tasks[channel_id] = task
+        logger.info("Polling started for channel %s", channel_id)
 
 
 async def stop_polling(channel_id: str) -> None:
     """Stop polling for a channel"""
-    if channel_id in _polling_tasks:
-        _polling_tasks[channel_id].cancel()
-        try:
-            await _polling_tasks[channel_id]
-        except asyncio.CancelledError:
-            pass
-        del _polling_tasks[channel_id]
-        print(f"[Channel] Polling stopped for channel {channel_id}")
+    async with _polling_lock:
+        if channel_id in _polling_tasks:
+            _polling_tasks[channel_id].cancel()
+            try:
+                await _polling_tasks[channel_id]
+            except asyncio.CancelledError:
+                pass
+            del _polling_tasks[channel_id]
+            logger.info("Polling stopped for channel %s", channel_id)
 
 
 async def restore_all_on_startup() -> None:
     """Restore polling for all active channels on app startup"""
-    async for conn in get_conn():
-        channels = await models.list_active_channels(conn)
+    channels: list[dict] = []
+    try:
+        async for conn in get_conn():
+            channels = await models.list_active_channels(conn)
+    except Exception as exc:
+        logger.error("Failed to restore channels on startup: %s", exc)
+        return
 
     for channel in channels:
         await start_polling(channel["channel_id"])
 
-    print(f"[Channel] Restored polling for {len(channels)} channels")
+    logger.info("Restored polling for %d channels", len(channels))
 
 
 async def _poll_loop(channel_id: str) -> None:
@@ -57,7 +67,7 @@ async def _poll_loop(channel_id: str) -> None:
     if not channel or not channel["is_active"]:
         return
 
-    bot = get_bot_by_token(channel["bot_token"])
+    bot = await get_bot_by_token(channel["bot_token"])
     offset = channel["last_update_id"]
     chat_id = channel["telegram_chat_id"]
     channel_type = channel.get("channel_type", "MESSAGE")
@@ -70,7 +80,7 @@ async def _poll_loop(channel_id: str) -> None:
                 channel = await models.get_channel(conn, channel_id)
 
             if not channel or not channel["is_active"]:
-                print(f"[Channel] Channel {channel_id} deactivated, stopping poll")
+                logger.info("Channel %s deactivated, stopping poll", channel_id)
                 break
 
             # Get updates from Telegram (include callback_query for buttons)
@@ -79,18 +89,18 @@ async def _poll_loop(channel_id: str) -> None:
             )
 
             if updates:
-                print(f"[Channel] {channel_id} received {len(updates)} updates")
+                logger.debug("Channel %s received %d updates", channel_id, len(updates))
 
             for update in updates:
                 offset = update.update_id
 
-                # Debug: Show update type
+                # Log update type
                 update_type = "unknown"
                 if update.callback_query:
                     update_type = "callback_query"
                 elif update.message:
                     update_type = "message"
-                print(f"[Channel] {channel_id} processing update type: {update_type}")
+                logger.debug("Channel %s processing update type: %s", channel_id, update_type)
 
                 # Update offset in DB
                 async for conn in get_conn():
@@ -98,7 +108,7 @@ async def _poll_loop(channel_id: str) -> None:
 
                 # Handle button callbacks (same for all channel types)
                 if update.callback_query:
-                    print(f"[Channel] Handling button callback for channel {channel_id}")
+                    logger.debug("Handling button callback for channel %s", channel_id)
                     await _handle_button_callback(update.callback_query, bot)
 
                 # Handle messages (different behavior based on channel type)
@@ -129,8 +139,8 @@ async def _poll_loop(channel_id: str) -> None:
                         # PROMPT channels: Check for text response pattern (ID:#123 response)
                         await _handle_text_response(msg, bot)
 
-        except Exception as e:
-            print(f"[Channel] Polling error for {channel_id}: {e}")
+        except Exception as exc:
+            logger.warning("Polling error for channel %s: %s", channel_id, exc)
             await asyncio.sleep(5)
 
 
@@ -151,16 +161,10 @@ async def _handle_button_callback(callback_query, bot):
             await callback_query.answer("expired")
             return
 
-        # Get prompt details for confirmation
-        prompt_data = await prompt_models.get_prompt(conn, prompt_id)
-        prompt_text = prompt_data["text"] if prompt_data else f"prompt {prompt_id}"
+        logger.info("Prompt %s answered with option: %s", prompt_id, label)
 
-        # Debug logging
-        callback_url = prompt_data.get("callback_url") if prompt_data else None
-        print(f"[Button] Prompt {prompt_id} answered: {label}, callback_url: {callback_url}")
-
-        # Mark as answered (this triggers callback notification)
-        await prompt_models.mark_answered(
+        # Mark as answered and schedule callback if applicable
+        callback_info = await prompt_models.mark_answered(
             conn,
             prompt_id,
             answer_type="option",
@@ -168,11 +172,11 @@ async def _handle_button_callback(callback_query, bot):
             user_id=callback_query.from_user.id,
             username=callback_query.from_user.username,
         )
+        if callback_info:
+            schedule_callback(callback_info["callback_url"], callback_info["payload"])
 
     # Send popup notification (small notification at top of Telegram)
     await callback_query.answer(f"Selected: {label}")
-
-    # Note: Removed visible confirmation message - buttons are just removed silently
 
     # Remove buttons
     try:
@@ -202,9 +206,9 @@ async def _handle_text_response(message, bot):
 
     prompt_id, reply_text = match.group(1), match.group(2)
 
-    # Mark as answered
+    # Mark as answered and schedule callback if applicable
     async for conn in get_conn():
-        await prompt_models.mark_answered(
+        callback_info = await prompt_models.mark_answered(
             conn,
             prompt_id,
             answer_type="text",
@@ -212,6 +216,8 @@ async def _handle_text_response(message, bot):
             user_id=message.from_user.id if message.from_user else None,
             username=message.from_user.username if message.from_user else None,
         )
+        if callback_info:
+            schedule_callback(callback_info["callback_url"], callback_info["payload"])
 
     # Send confirmation
     await message.reply(f"Recorded answer for ID:{prompt_id}")

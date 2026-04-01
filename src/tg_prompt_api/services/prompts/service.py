@@ -1,7 +1,7 @@
 """Business logic for prompt domain"""
 
-import os
 from ...core.db import get_conn
+from ...core.util import validate_media_path, validate_callback_url
 from . import models
 
 
@@ -39,19 +39,22 @@ async def create_and_post_prompt(
     if media_count > 1:
         raise ValueError("Cannot provide multiple media sources")
 
+    # Validate media path without leaking filesystem details in errors
+    if has_media_path:
+        try:
+            validate_media_path(media_path)
+        except Exception:
+            raise ValueError("Invalid media path")
+
+    # Validate callback URL to prevent SSRF
+    if callback_url:
+        try:
+            validate_callback_url(str(callback_url))
+        except ValueError as exc:
+            raise ValueError(f"Invalid callback_url: {exc}") from exc
+
     # Resolve channel (default to __system_prompt__)
     resolved_channel_id = channel_id or "__system_prompt__"
-
-    # Look up channel to get bot token and chat ID
-    async for conn in get_conn():
-        channel = await channel_models.get_channel(conn, resolved_channel_id)
-
-    if not channel:
-        raise ValueError(f"Channel {resolved_channel_id} not found")
-
-    # Use channel's chat (ignore legacy chat_id parameter if channel_id provided)
-    target_chat = channel["telegram_chat_id"]
-    bot_token = channel["bot_token"]
 
     # Determine what to pass to telegram
     media_to_send = None
@@ -60,16 +63,18 @@ async def create_and_post_prompt(
     elif has_media_url:
         media_to_send = str(media_url)
     elif has_media_path:
-        # Validate file exists
-        if not os.path.exists(media_path):
-            raise FileNotFoundError(f"File not found: {media_path}")
-        if not os.path.isfile(media_path):
-            raise ValueError(f"Path is not a file: {media_path}")
         media_to_send = media_path
 
-    # Create prompt in database
+    # Look up channel and create prompt in a single connection
     async for aconn in get_conn():
-        prompt_id = await models.create_prompt(
+        channel = await channel_models.get_channel(aconn, resolved_channel_id)
+        if not channel:
+            raise ValueError(f"Channel {resolved_channel_id} not found")
+
+        target_chat = channel["telegram_chat_id"]
+        bot_token = channel["bot_token"]
+
+        prompt_id, row = await models.create_prompt(
             aconn,
             chat_id=str(target_chat),
             text=text,
@@ -83,11 +88,5 @@ async def create_and_post_prompt(
 
     # Post to Telegram using channel's bot
     await post_prompt_to_chat(prompt_id, text, media_to_send, options, target_chat, bot_token)
-
-    # Fetch created prompt
-    async for aconn in get_conn():
-        row = await models.get_prompt(aconn, prompt_id)
-        if not row:
-            raise RuntimeError("Prompt missing after create")
 
     return prompt_id, row

@@ -1,8 +1,9 @@
 """FastAPI application factory"""
 
-import os
-import asyncio
-from fastapi import FastAPI
+import hmac
+import logging
+from contextlib import asynccontextmanager
+from fastapi import Depends, FastAPI, Header, HTTPException
 
 from ..core.config import settings
 from ..core.security import setup_secure_logging
@@ -11,45 +12,66 @@ from ..services.prompts import models as prompt_models
 from ..services.channels import poller as channel_poller
 from .v1 import prompts, channels
 
-# Fix Windows event loop policy for psycopg
-if os.name == "nt":  # Windows
-    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+logger = logging.getLogger(__name__)
 
 
-def create_app() -> FastAPI:
-    """Create and configure the FastAPI application."""
-    app = FastAPI(title="Telegram Prompt & Channel Gateway")
+async def _check_api_key(x_api_key: str | None = Header(default=None, alias="X-API-Key")) -> None:
+    """Validate API key when USE_AUTH is enabled."""
+    if not settings.USE_AUTH:
+        return
+    if settings.API_KEY is None:
+        raise HTTPException(500, "Authentication misconfigured")
+    if x_api_key is None or not hmac.compare_digest(x_api_key, settings.API_KEY.get_secret_value()):
+        raise HTTPException(401, "Invalid or missing API key")
 
-    # Register routers
-    app.include_router(prompts.router, prefix="/v1")
-    app.include_router(channels.router)  # No prefix - matches MVP reference
 
-    @app.on_event("startup")
-    async def startup():
-        """Application startup: setup logging, clean boot, and restore channel polling."""
-        # Setup secure logging with token redaction
-        setup_secure_logging()
+@asynccontextmanager
+async def _lifespan(app: FastAPI):
+    """Application startup: setup logging, clean boot, and restore channel polling."""
+    setup_secure_logging()
 
-        # Auto-register the default prompt channel
-        from ..services.channels import models as channel_models
+    from ..services.channels import models as channel_models
 
+    try:
         async for conn in get_conn():
             await channel_models.register_channel(
                 conn,
                 channel_id="__system_prompt__",
                 telegram_chat_id=settings.TELEGRAM_TARGET_CHAT_ID,
                 bot_token=settings.TELEGRAM_BOT_TOKEN.get_secret_value(),
-                callback_url=None,  # PROMPT channels use per-prompt callbacks
+                callback_url=None,
                 channel_type="PROMPT",
             )
+    except Exception as exc:
+        logger.error("Failed to register __system_prompt__ channel on startup: %s", exc)
 
-        # Clean on boot if enabled
-        if settings.CLEAN_ON_BOOT:
+    if settings.CLEAN_ON_BOOT:
+        try:
             async for aconn in get_conn():
                 await prompt_models.clean_on_boot(aconn)
+        except Exception as exc:
+            logger.error("Failed to clean prompts on boot: %s", exc)
 
-        # Restore channel polling for all active channels (including default)
-        await channel_poller.restore_all_on_startup()
+    await channel_poller.restore_all_on_startup()
+    yield
+
+
+def create_app() -> FastAPI:
+    """Create and configure the FastAPI application."""
+    app = FastAPI(
+        title="Telegram Prompt & Channel Gateway",
+        lifespan=_lifespan,
+        docs_url="/docs" if settings.ENABLE_DOCS else None,
+        redoc_url="/redoc" if settings.ENABLE_DOCS else None,
+        openapi_url="/openapi.json" if settings.ENABLE_DOCS else None,
+    )
+
+    app.include_router(prompts.router, prefix="/v1", dependencies=[Depends(_check_api_key)])
+    app.include_router(channels.router, dependencies=[Depends(_check_api_key)])
+
+    @app.get("/healthz", include_in_schema=False)
+    async def healthz():
+        return {"status": "ok"}
 
     return app
 

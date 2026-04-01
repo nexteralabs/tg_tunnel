@@ -23,7 +23,7 @@ async def register_channel(
             bot_token = EXCLUDED.bot_token,
             callback_url = EXCLUDED.callback_url,
             channel_type = EXCLUDED.channel_type,
-            last_update_id = 0,
+            last_update_id = COALESCE(channels.last_update_id, 0),
             is_active = true
         """,
         channel_id,
@@ -43,7 +43,7 @@ async def list_active_channels(conn) -> list[dict]:
     """List all active channels"""
     return await fetchall(
         conn,
-        "SELECT channel_id, telegram_chat_id, registered_at FROM channels WHERE is_active = true",
+        "SELECT * FROM channels WHERE is_active = true",
     )
 
 

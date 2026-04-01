@@ -1,7 +1,6 @@
 """Prompt API endpoints"""
 
 import json
-from typing import Optional, List
 from fastapi import APIRouter, HTTPException, File, UploadFile, Form
 
 from ...core.db import get_conn
@@ -32,8 +31,10 @@ async def create_prompt_endpoint(p: schemas.PromptIn):
         )
     except ValueError as e:
         raise HTTPException(400, str(e))
-    except FileNotFoundError as e:
-        raise HTTPException(400, {"error": "file_not_found", "message": str(e)})
+    except FileNotFoundError:
+        raise HTTPException(
+            400, {"error": "file_not_found", "message": "The specified media file was not found."}
+        )
     except RuntimeError as e:
         raise HTTPException(500, str(e))
 
@@ -53,7 +54,7 @@ async def create_prompt_with_upload(
 ):
     """Create a prompt with optional file upload or media URL."""
     # Parse options if provided
-    parsed_options: Optional[List[str]] = None
+    parsed_options: list[str] | None = None
     if options:
         try:
             parsed_options = json.loads(options)
@@ -92,6 +93,7 @@ async def create_prompt_with_upload(
 @router.get("/prompts/pending", response_model=list[schemas.PromptRow])
 async def list_pending_prompts():
     """List all pending prompts."""
+    rows: list[dict] = []
     async for aconn in get_conn():
         rows = await models.list_pending(aconn)
     return [schemas.PromptRow(**r) for r in rows]
@@ -100,6 +102,7 @@ async def list_pending_prompts():
 @router.get("/prompts/{prompt_id}", response_model=schemas.PromptRow)
 async def get_prompt_details(prompt_id: str):
     """Get prompt details by ID."""
+    row = None
     async for aconn in get_conn():
         row = await models.get_prompt(aconn, prompt_id)
     if not row:

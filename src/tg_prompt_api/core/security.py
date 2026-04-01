@@ -25,6 +25,15 @@ class TokenRedactingFilter(logging.Filter):
                 for arg in record.args
             )
 
+        # Redact exception tracebacks before the logging Formatter renders them
+        if record.exc_info:
+            import traceback as _tb
+
+            record.exc_text = self._redact_sensitive_data(
+                "".join(_tb.format_exception(*record.exc_info))
+            )
+            record.exc_info = None  # Prevent the Formatter from re-rendering
+
         return True
 
     def _redact_sensitive_data(self, text: str) -> str:
