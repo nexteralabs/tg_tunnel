@@ -55,7 +55,7 @@ def setup_secure_logging():
     root_logger.addFilter(token_filter)
 
     # Also apply to specific loggers that might log sensitive data
-    sensitive_loggers = ["tg_prompt_api", "aiogram", "httpx", "uvicorn"]
+    sensitive_loggers = ["tg_tunnel", "aiogram", "httpx", "uvicorn"]
 
     for logger_name in sensitive_loggers:
         logger = logging.getLogger(logger_name)

@@ -1,20 +1,20 @@
 """
-Unit tests for tg_prompt_api.core.util — pure functions, no DB or network.
+Unit tests for tg_tunnel.core.util — pure functions, no DB or network.
 """
 import hashlib
 import hmac
 
 import pytest
 
-from tg_prompt_api.core.config import settings
-from tg_prompt_api.services.prompts.models import parse_prompt_id
-from tg_prompt_api.core.util import (
+from tg_tunnel.core.config import settings
+from tg_tunnel.services.prompts.models import parse_prompt_id
+from tg_tunnel.core.util import (
     resolve_callback_url,
     sign_body,
     validate_callback_url,
     validate_media_path,
 )
-import tg_prompt_api.core.util as util_module
+import tg_tunnel.core.util as util_module
 
 
 # ---------------------------------------------------------------------------

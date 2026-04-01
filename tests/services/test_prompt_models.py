@@ -1,8 +1,8 @@
 """
-Unit tests for tg_prompt_api.services.prompts.models.
+Unit tests for tg_tunnel.services.prompts.models.
 
 All database I/O (fetchone, fetchall, execute) is patched at the module level in
-tg_prompt_api.core.db so no real PostgreSQL connection is needed.
+tg_tunnel.core.db so no real PostgreSQL connection is needed.
 """
 from datetime import datetime, timezone
 from unittest.mock import AsyncMock, MagicMock, call, patch
@@ -27,7 +27,7 @@ def _make_conn():
 class TestMarkAnswered:
     async def test_returns_callback_info_when_callback_url_set(self):
         """mark_answered returns {"callback_url": ..., "payload": ...} when callback_url is set."""
-        from tg_prompt_api.services.prompts.models import mark_answered
+        from tg_tunnel.services.prompts.models import mark_answered
 
         answered_at = datetime(2024, 6, 1, 12, 0, 0, tzinfo=timezone.utc)
         fake_prompt = {
@@ -42,8 +42,8 @@ class TestMarkAnswered:
         conn = _make_conn()
 
         with (
-            patch("tg_prompt_api.services.prompts.models.execute", new=AsyncMock()),
-            patch("tg_prompt_api.services.prompts.models.fetchone", new=AsyncMock(return_value=fake_prompt)),
+            patch("tg_tunnel.services.prompts.models.execute", new=AsyncMock()),
+            patch("tg_tunnel.services.prompts.models.fetchone", new=AsyncMock(return_value=fake_prompt)),
         ):
             result = await mark_answered(
                 conn,
@@ -67,7 +67,7 @@ class TestMarkAnswered:
 
     async def test_returns_none_when_no_callback_url(self):
         """mark_answered returns None when the prompt has no callback_url."""
-        from tg_prompt_api.services.prompts.models import mark_answered
+        from tg_tunnel.services.prompts.models import mark_answered
 
         fake_prompt = {
             "prompt_num": 2,
@@ -81,8 +81,8 @@ class TestMarkAnswered:
         conn = _make_conn()
 
         with (
-            patch("tg_prompt_api.services.prompts.models.execute", new=AsyncMock()),
-            patch("tg_prompt_api.services.prompts.models.fetchone", new=AsyncMock(return_value=fake_prompt)),
+            patch("tg_tunnel.services.prompts.models.execute", new=AsyncMock()),
+            patch("tg_tunnel.services.prompts.models.fetchone", new=AsyncMock(return_value=fake_prompt)),
         ):
             result = await mark_answered(
                 conn,
@@ -102,7 +102,7 @@ class TestMarkAnswered:
         This means calling mark_answered a second time (after the prompt is already ANSWERED)
         will still return callback info — callers must deduplicate if needed.
         """
-        from tg_prompt_api.services.prompts.models import mark_answered
+        from tg_tunnel.services.prompts.models import mark_answered
 
         answered_at = datetime(2024, 6, 1, 12, 0, 0, tzinfo=timezone.utc)
         already_answered_prompt = {
@@ -117,9 +117,9 @@ class TestMarkAnswered:
         conn = _make_conn()
 
         with (
-            patch("tg_prompt_api.services.prompts.models.execute", new=AsyncMock()),
+            patch("tg_tunnel.services.prompts.models.execute", new=AsyncMock()),
             # get_prompt still returns the row even on second call
-            patch("tg_prompt_api.services.prompts.models.fetchone", new=AsyncMock(return_value=already_answered_prompt)),
+            patch("tg_tunnel.services.prompts.models.fetchone", new=AsyncMock(return_value=already_answered_prompt)),
         ):
             result = await mark_answered(
                 conn,
@@ -137,7 +137,7 @@ class TestMarkAnswered:
 
     async def test_answered_at_is_isoformat_string(self):
         """The answered_at in the callback payload is an ISO 8601 formatted string."""
-        from tg_prompt_api.services.prompts.models import mark_answered
+        from tg_tunnel.services.prompts.models import mark_answered
 
         answered_at = datetime(2024, 6, 15, 9, 30, 0, tzinfo=timezone.utc)
         fake_prompt = {
@@ -152,8 +152,8 @@ class TestMarkAnswered:
         conn = _make_conn()
 
         with (
-            patch("tg_prompt_api.services.prompts.models.execute", new=AsyncMock()),
-            patch("tg_prompt_api.services.prompts.models.fetchone", new=AsyncMock(return_value=fake_prompt)),
+            patch("tg_tunnel.services.prompts.models.execute", new=AsyncMock()),
+            patch("tg_tunnel.services.prompts.models.fetchone", new=AsyncMock(return_value=fake_prompt)),
         ):
             result = await mark_answered(
                 conn,
@@ -180,7 +180,7 @@ class TestMarkAnswered:
 class TestCreatePrompt:
     async def test_returns_hash_prefixed_id(self):
         """create_prompt returns a '#<n>' string where n is prompt_num from the RETURNING row."""
-        from tg_prompt_api.services.prompts.models import create_prompt
+        from tg_tunnel.services.prompts.models import create_prompt
 
         fake_row = {
             "prompt_num": 42,
@@ -201,7 +201,7 @@ class TestCreatePrompt:
 
         conn = _make_conn()
 
-        with patch("tg_prompt_api.services.prompts.models.fetchone", new=AsyncMock(return_value=fake_row)):
+        with patch("tg_tunnel.services.prompts.models.fetchone", new=AsyncMock(return_value=fake_row)):
             prompt_id, row = await create_prompt(
                 conn,
                 chat_id="-100123",
@@ -218,7 +218,7 @@ class TestCreatePrompt:
 
     async def test_returns_full_row(self):
         """create_prompt also returns the complete row dict alongside the formatted ID."""
-        from tg_prompt_api.services.prompts.models import create_prompt
+        from tg_tunnel.services.prompts.models import create_prompt
 
         now = datetime.now(timezone.utc)
         fake_row = {
@@ -240,7 +240,7 @@ class TestCreatePrompt:
 
         conn = _make_conn()
 
-        with patch("tg_prompt_api.services.prompts.models.fetchone", new=AsyncMock(return_value=fake_row)):
+        with patch("tg_tunnel.services.prompts.models.fetchone", new=AsyncMock(return_value=fake_row)):
             prompt_id, row = await create_prompt(
                 conn,
                 chat_id="-100999",

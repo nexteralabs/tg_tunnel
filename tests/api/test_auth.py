@@ -1,7 +1,7 @@
 """
 Tests for the optional API key authentication middleware.
 
-The middleware is implemented in tg_prompt_api.api.app._check_api_key and is
+The middleware is implemented in tg_tunnel.api.app._check_api_key and is
 applied as a dependency on every router.  We exercise it by sending real HTTP
 requests through the ASGI app — no mocks on the auth logic itself.
 """
@@ -30,7 +30,7 @@ async def _get_channels_client(use_auth: bool, api_key: str | None):
     monkeypatching the settings singleton.  Returns the client directly so the
     caller can make requests.
     """
-    from tg_prompt_api.core.config import settings
+    from tg_tunnel.core.config import settings
     from httpx import AsyncClient, ASGITransport
 
     settings.USE_AUTH = use_auth
@@ -39,21 +39,21 @@ async def _get_channels_client(use_auth: bool, api_key: str | None):
     fake_get_conn, _ = _make_null_conn()
 
     with (
-        patch("tg_prompt_api.core.db.get_conn", new=fake_get_conn),
+        patch("tg_tunnel.core.db.get_conn", new=fake_get_conn),
         patch(
-            "tg_prompt_api.services.channels.poller.restore_all_on_startup",
+            "tg_tunnel.services.channels.poller.restore_all_on_startup",
             new=AsyncMock(),
         ),
         patch(
-            "tg_prompt_api.services.channels.models.register_channel",
+            "tg_tunnel.services.channels.models.register_channel",
             new=AsyncMock(),
         ),
         patch(
-            "tg_prompt_api.services.prompts.models.clean_on_boot",
+            "tg_tunnel.services.prompts.models.clean_on_boot",
             new=AsyncMock(),
         ),
     ):
-        from tg_prompt_api.api.app import app
+        from tg_tunnel.api.app import app
 
         return AsyncClient(transport=ASGITransport(app=app), base_url="http://test")
 
@@ -66,7 +66,7 @@ async def _get_channels_client(use_auth: bool, api_key: str | None):
 class TestAuthMiddleware:
     async def test_no_auth_any_request_proceeds(self):
         """With USE_AUTH=False, requests without a key should not get 401."""
-        from tg_prompt_api.core.config import settings
+        from tg_tunnel.core.config import settings
         from httpx import AsyncClient, ASGITransport
         from pydantic import SecretStr
         from unittest.mock import AsyncMock, patch, MagicMock
@@ -79,25 +79,25 @@ class TestAuthMiddleware:
         conn.cursor.return_value.__aenter__ = AsyncMock(return_value=MagicMock(fetchall=AsyncMock(return_value=[])))
 
         with (
-            patch("tg_prompt_api.core.db.get_conn", new=fake_get_conn),
+            patch("tg_tunnel.core.db.get_conn", new=fake_get_conn),
             patch(
-                "tg_prompt_api.services.channels.poller.restore_all_on_startup",
+                "tg_tunnel.services.channels.poller.restore_all_on_startup",
                 new=AsyncMock(),
             ),
             patch(
-                "tg_prompt_api.services.channels.models.register_channel",
+                "tg_tunnel.services.channels.models.register_channel",
                 new=AsyncMock(),
             ),
             patch(
-                "tg_prompt_api.services.prompts.models.clean_on_boot",
+                "tg_tunnel.services.prompts.models.clean_on_boot",
                 new=AsyncMock(),
             ),
             patch(
-                "tg_prompt_api.services.channels.models.list_active_channels",
+                "tg_tunnel.services.channels.models.list_active_channels",
                 new=AsyncMock(return_value=[]),
             ),
         ):
-            from tg_prompt_api.api.app import app
+            from tg_tunnel.api.app import app
 
             async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
                 resp = await ac.get("/channels")
@@ -106,7 +106,7 @@ class TestAuthMiddleware:
 
     async def test_auth_enabled_no_key_returns_401(self):
         """With USE_AUTH=True, missing X-API-Key header → 401."""
-        from tg_prompt_api.core.config import settings
+        from tg_tunnel.core.config import settings
         from httpx import AsyncClient, ASGITransport
         from pydantic import SecretStr
 
@@ -116,21 +116,21 @@ class TestAuthMiddleware:
         fake_get_conn, _ = _make_null_conn()
 
         with (
-            patch("tg_prompt_api.core.db.get_conn", new=fake_get_conn),
+            patch("tg_tunnel.core.db.get_conn", new=fake_get_conn),
             patch(
-                "tg_prompt_api.services.channels.poller.restore_all_on_startup",
+                "tg_tunnel.services.channels.poller.restore_all_on_startup",
                 new=AsyncMock(),
             ),
             patch(
-                "tg_prompt_api.services.channels.models.register_channel",
+                "tg_tunnel.services.channels.models.register_channel",
                 new=AsyncMock(),
             ),
             patch(
-                "tg_prompt_api.services.prompts.models.clean_on_boot",
+                "tg_tunnel.services.prompts.models.clean_on_boot",
                 new=AsyncMock(),
             ),
         ):
-            from tg_prompt_api.api.app import app
+            from tg_tunnel.api.app import app
 
             async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
                 resp = await ac.get("/channels")
@@ -139,7 +139,7 @@ class TestAuthMiddleware:
 
     async def test_auth_enabled_wrong_key_returns_401(self):
         """With USE_AUTH=True, incorrect X-API-Key → 401."""
-        from tg_prompt_api.core.config import settings
+        from tg_tunnel.core.config import settings
         from httpx import AsyncClient, ASGITransport
         from pydantic import SecretStr
 
@@ -149,21 +149,21 @@ class TestAuthMiddleware:
         fake_get_conn, _ = _make_null_conn()
 
         with (
-            patch("tg_prompt_api.core.db.get_conn", new=fake_get_conn),
+            patch("tg_tunnel.core.db.get_conn", new=fake_get_conn),
             patch(
-                "tg_prompt_api.services.channels.poller.restore_all_on_startup",
+                "tg_tunnel.services.channels.poller.restore_all_on_startup",
                 new=AsyncMock(),
             ),
             patch(
-                "tg_prompt_api.services.channels.models.register_channel",
+                "tg_tunnel.services.channels.models.register_channel",
                 new=AsyncMock(),
             ),
             patch(
-                "tg_prompt_api.services.prompts.models.clean_on_boot",
+                "tg_tunnel.services.prompts.models.clean_on_boot",
                 new=AsyncMock(),
             ),
         ):
-            from tg_prompt_api.api.app import app
+            from tg_tunnel.api.app import app
 
             async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
                 resp = await ac.get("/channels", headers={"X-API-Key": "wrong-key"})
@@ -172,7 +172,7 @@ class TestAuthMiddleware:
 
     async def test_auth_enabled_correct_key_proceeds(self):
         """With USE_AUTH=True and correct key, request is not rejected with 401."""
-        from tg_prompt_api.core.config import settings
+        from tg_tunnel.core.config import settings
         from httpx import AsyncClient, ASGITransport
         from pydantic import SecretStr
 
@@ -182,25 +182,25 @@ class TestAuthMiddleware:
         fake_get_conn, _ = _make_null_conn()
 
         with (
-            patch("tg_prompt_api.core.db.get_conn", new=fake_get_conn),
+            patch("tg_tunnel.core.db.get_conn", new=fake_get_conn),
             patch(
-                "tg_prompt_api.services.channels.poller.restore_all_on_startup",
+                "tg_tunnel.services.channels.poller.restore_all_on_startup",
                 new=AsyncMock(),
             ),
             patch(
-                "tg_prompt_api.services.channels.models.register_channel",
+                "tg_tunnel.services.channels.models.register_channel",
                 new=AsyncMock(),
             ),
             patch(
-                "tg_prompt_api.services.prompts.models.clean_on_boot",
+                "tg_tunnel.services.prompts.models.clean_on_boot",
                 new=AsyncMock(),
             ),
             patch(
-                "tg_prompt_api.services.channels.models.list_active_channels",
+                "tg_tunnel.services.channels.models.list_active_channels",
                 new=AsyncMock(return_value=[]),
             ),
         ):
-            from tg_prompt_api.api.app import app
+            from tg_tunnel.api.app import app
 
             async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
                 resp = await ac.get("/channels", headers={"X-API-Key": "correct-key-here"})

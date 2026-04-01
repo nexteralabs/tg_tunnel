@@ -16,7 +16,7 @@ def reset_use_auth():
     test_auth.py mutates the settings singleton directly. This fixture prevents
     that pollution from causing 401 responses on unrelated channel endpoint tests.
     """
-    from tg_prompt_api.core.config import settings
+    from tg_tunnel.core.config import settings
     settings.USE_AUTH = False
     yield
     settings.USE_AUTH = False
@@ -42,15 +42,15 @@ class TestRegisterChannel:
         """PROMPT channels do not require callback_url — registration must succeed."""
         with (
             patch(
-                "tg_prompt_api.services.channels.models.get_channel",
+                "tg_tunnel.services.channels.models.get_channel",
                 new=AsyncMock(return_value=None),
             ),
             patch(
-                "tg_prompt_api.services.channels.models.register_channel",
+                "tg_tunnel.services.channels.models.register_channel",
                 new=AsyncMock(),
             ),
             patch(
-                "tg_prompt_api.services.channels.poller.start_polling",
+                "tg_tunnel.services.channels.poller.start_polling",
                 new=AsyncMock(),
             ),
         ):
@@ -71,15 +71,15 @@ class TestRegisterChannel:
         """Happy path: new channel is stored and polling starts, response confirms registration."""
         with (
             patch(
-                "tg_prompt_api.services.channels.models.get_channel",
+                "tg_tunnel.services.channels.models.get_channel",
                 new=AsyncMock(return_value=None),
             ),
             patch(
-                "tg_prompt_api.services.channels.models.register_channel",
+                "tg_tunnel.services.channels.models.register_channel",
                 new=AsyncMock(),
             ),
             patch(
-                "tg_prompt_api.services.channels.poller.start_polling",
+                "tg_tunnel.services.channels.poller.start_polling",
                 new=AsyncMock(),
             ),
         ):
@@ -103,7 +103,7 @@ class TestSendMessage:
     async def test_send_to_unknown_channel_returns_404(self, client):
         """When send_to_channel raises ValueError (channel not found), the API returns 404."""
         with patch(
-            "tg_prompt_api.services.channels.service.send_to_channel",
+            "tg_tunnel.services.channels.service.send_to_channel",
             new=AsyncMock(side_effect=ValueError("Channel unknown-ch not registered")),
         ):
             resp = await client.post(
@@ -115,7 +115,7 @@ class TestSendMessage:
     async def test_send_to_known_channel_returns_sent(self, client):
         """Successful send returns {"status": "sent"}."""
         with patch(
-            "tg_prompt_api.services.channels.service.send_to_channel",
+            "tg_tunnel.services.channels.service.send_to_channel",
             new=AsyncMock(return_value=None),
         ):
             resp = await client.post(
@@ -150,7 +150,7 @@ class TestListChannels:
             },
         ]
         with patch(
-            "tg_prompt_api.services.channels.models.list_active_channels",
+            "tg_tunnel.services.channels.models.list_active_channels",
             new=AsyncMock(return_value=fake_channels),
         ):
             resp = await client.get("/channels")
@@ -173,7 +173,7 @@ class TestListChannels:
             },
         ]
         with patch(
-            "tg_prompt_api.services.channels.models.list_active_channels",
+            "tg_tunnel.services.channels.models.list_active_channels",
             new=AsyncMock(return_value=fake_channels),
         ):
             resp = await client.get("/channels")
@@ -193,7 +193,7 @@ class TestDeleteChannel:
     async def test_delete_channel_not_found_returns_404(self, client):
         """Regression: DELETE /channels/{id} when channel doesn't exist must return 404, not 200."""
         with patch(
-            "tg_prompt_api.services.channels.models.get_channel",
+            "tg_tunnel.services.channels.models.get_channel",
             new=AsyncMock(return_value=None),
         ):
             resp = await client.delete("/channels/nonexistent-ch")
@@ -209,15 +209,15 @@ class TestDeleteChannel:
         }
         with (
             patch(
-                "tg_prompt_api.services.channels.models.get_channel",
+                "tg_tunnel.services.channels.models.get_channel",
                 new=AsyncMock(return_value=fake_channel),
             ),
             patch(
-                "tg_prompt_api.services.channels.poller.stop_polling",
+                "tg_tunnel.services.channels.poller.stop_polling",
                 new=AsyncMock(),
             ),
             patch(
-                "tg_prompt_api.services.channels.models.deactivate_channel",
+                "tg_tunnel.services.channels.models.deactivate_channel",
                 new=AsyncMock(),
             ),
         ):

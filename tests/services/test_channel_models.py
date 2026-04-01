@@ -1,5 +1,5 @@
 """
-Unit tests for tg_prompt_api.services.channels.models.
+Unit tests for tg_tunnel.services.channels.models.
 
 Verifies SQL-level correctness (COALESCE preservation, SELECT *, WHERE is_active, etc.)
 by capturing the SQL string passed to the patched core.db module-level functions.
@@ -24,7 +24,7 @@ class TestRegisterChannel:
         The SQL uses COALESCE(channels.last_update_id, 0) so that the existing
         polling offset is preserved on idempotent re-registration.
         """
-        from tg_prompt_api.services.channels.models import register_channel
+        from tg_tunnel.services.channels.models import register_channel
 
         conn = _make_conn()
         captured_sql = []
@@ -34,7 +34,7 @@ class TestRegisterChannel:
 
         # Patch at the models' import location, not at core.db, because the
         # module already imported `execute` by name at load time.
-        with patch("tg_prompt_api.services.channels.models.execute", new=_capture_execute):
+        with patch("tg_tunnel.services.channels.models.execute", new=_capture_execute):
             await register_channel(
                 conn,
                 "my-channel",
@@ -51,7 +51,7 @@ class TestRegisterChannel:
 
     async def test_new_channel_sets_is_active_true(self):
         """New channel registration must include is_active = true in the upsert."""
-        from tg_prompt_api.services.channels.models import register_channel
+        from tg_tunnel.services.channels.models import register_channel
 
         conn = _make_conn()
         captured_sql = []
@@ -59,7 +59,7 @@ class TestRegisterChannel:
         async def _capture_execute(aconn, sql, *params):
             captured_sql.append(sql)
 
-        with patch("tg_prompt_api.services.channels.models.execute", new=_capture_execute):
+        with patch("tg_tunnel.services.channels.models.execute", new=_capture_execute):
             await register_channel(
                 conn,
                 "new-ch",
@@ -85,7 +85,7 @@ class TestListActiveChannels:
         """Regression: list_active_channels must use SELECT * so bot_token is available
         to the poller (which needs it to create the bot instance).
         """
-        from tg_prompt_api.services.channels.models import list_active_channels
+        from tg_tunnel.services.channels.models import list_active_channels
 
         conn = _make_conn()
         captured_sql = []
@@ -94,7 +94,7 @@ class TestListActiveChannels:
             captured_sql.append(sql)
             return []
 
-        with patch("tg_prompt_api.services.channels.models.fetchall", new=_capture_fetchall):
+        with patch("tg_tunnel.services.channels.models.fetchall", new=_capture_fetchall):
             await list_active_channels(conn)
 
         assert len(captured_sql) == 1
@@ -104,7 +104,7 @@ class TestListActiveChannels:
 
     async def test_only_returns_active_channels(self):
         """SQL must filter WHERE is_active = true so inactive channels are excluded."""
-        from tg_prompt_api.services.channels.models import list_active_channels
+        from tg_tunnel.services.channels.models import list_active_channels
 
         conn = _make_conn()
         captured_sql = []
@@ -113,7 +113,7 @@ class TestListActiveChannels:
             captured_sql.append(sql)
             return []
 
-        with patch("tg_prompt_api.services.channels.models.fetchall", new=_capture_fetchall):
+        with patch("tg_tunnel.services.channels.models.fetchall", new=_capture_fetchall):
             await list_active_channels(conn)
 
         sql = captured_sql[0]
@@ -129,7 +129,7 @@ class TestListActiveChannels:
 class TestDeactivateChannel:
     async def test_sets_is_active_false(self):
         """deactivate_channel issues UPDATE SET is_active = false for the given channel_id."""
-        from tg_prompt_api.services.channels.models import deactivate_channel
+        from tg_tunnel.services.channels.models import deactivate_channel
 
         conn = _make_conn()
         captured: list[tuple] = []
@@ -137,7 +137,7 @@ class TestDeactivateChannel:
         async def _capture_execute(aconn, sql, *params):
             captured.append((sql, params))
 
-        with patch("tg_prompt_api.services.channels.models.execute", new=_capture_execute):
+        with patch("tg_tunnel.services.channels.models.execute", new=_capture_execute):
             await deactivate_channel(conn, "my-channel")
 
         assert len(captured) == 1
