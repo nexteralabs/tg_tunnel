@@ -30,8 +30,8 @@ The result: a clean **human-in-the-loop** pattern that works with any language, 
   Agent B  ─── HTTP ──► │                  TG-Tunnel                  │ ──► 👤 On-call (free text)
   Agent C  ─── HTTP ──► │      (your self-hosted comms backbone)      │ ──► 👤 Manager (approval gate)
                         │                                             │
-  Agent A  ◄─ webhook ─ │   signed callbacks · per-channel routing   │ ◄── tap / reply
-  Agent B  ◄─ webhook ─ │   HMAC auth · auto-retry · long-poll       │
+  Agent A  ◄─ webhook ─ │   signed callbacks · per-channel routing    │ ◄── tap / reply
+  Agent B  ◄─ webhook ─ │   HMAC auth · auto-retry · long-poll        │
   Agent C  ◄─ webhook ─ │                                             │
                         └─────────────────────────────────────────────┘
 ```
@@ -154,21 +154,21 @@ TG-Tunnel handles all the long-polling internally — no public-facing webhook U
 
 ```
                            TG-Tunnel (port 8100)
-                          ┌──────────────────────────────────────────┐
-                          │                                          │
-  POST /v1/prompts ───────►  Prompt API     ──► Telegram Bot API    │
-  GET  /v1/prompts/:id    │  (aiogram)       ◄── button callbacks   │
+                           ┌─────────────────────────────────────────┐
+                           │                                         │
+  POST /v1/prompts ───────►│  Prompt API     ──► Telegram Bot API    │
+  GET  /v1/prompts/:id     │  (aiogram)       ◄── button callbacks   │
   GET  /v1/prompts/pending │                                         │
-                          │                                          │
-  POST /register-channel  ►  Channel        ──► Telegram Bot API    │
-  POST /send              │  Gateway         ◄── long poll loop     │
-  GET  /channels          │  (per-channel                           │
-  DEL  /channels/:id      │   asyncio task)                         │
-                          │                                          │
-                          │  PostgreSQL ──── prompts                 │
-                          │                 channels                 │
-                          │                 prompt_options           │
-                          └──────────────────────────────────────────┘
+                           │                                         │
+  POST /register-channel ─►│  Channel        ──► Telegram Bot API    │
+  POST /send               │  Gateway         ◄── long poll loop     │
+  GET  /channels           │  (per-channel                           │
+  DEL  /channels/:id       │   asyncio task)                         │
+                           │                                         │
+                           │  PostgreSQL ──── prompts                │
+                           │                 channels                │
+                           │                 prompt_options          │
+                           └─────────────────────────────────────────┘
 ```
 
 Each `POST /register-channel` spawns a dedicated polling loop for that channel's bot. Channels are restored automatically on startup from the database.
