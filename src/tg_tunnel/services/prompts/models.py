@@ -50,7 +50,8 @@ async def create_prompt(
         expires_at,
     )
 
-    # Return the simple formatted ID alongside the full row
+    # INSERT ... RETURNING always yields a row; guard for type checker
+    assert row is not None, "INSERT RETURNING yielded no row"
     return f"#{row['prompt_num']}", row
 
 

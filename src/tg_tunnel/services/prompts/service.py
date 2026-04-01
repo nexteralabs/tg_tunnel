@@ -42,7 +42,7 @@ async def create_and_post_prompt(
     # Validate media path without leaking filesystem details in errors
     if has_media_path:
         try:
-            validate_media_path(media_path)
+            validate_media_path(media_path or "")
         except Exception:
             raise ValueError("Invalid media path")
 

@@ -19,9 +19,71 @@ jobs:
       - run: uv run ruff check src/
       - run: uv run ruff format --check src/
 
+  test:
+    name: Tests (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+      - run: uv sync --group dev
+      - name: Run tests with coverage
+        run: uv run pytest tests/ -q --cov=tg_tunnel --cov-report=xml --cov-report=term-missing
+      - name: Upload coverage report
+        if: matrix.python-version == '3.12'
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage.xml
+
+  typecheck:
+    name: Type Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v4
+        with:
+          python-version: "3.12"
+      - run: uv sync --group dev
+      - run: uv run mypy src/tg_tunnel --ignore-missing-imports --no-error-summary
+
+  security:
+    name: Security Audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v4
+        with:
+          python-version: "3.12"
+      - run: uv sync --group dev
+      - name: Audit dependencies for known vulnerabilities
+        run: uv run pip-audit --require-hashes -r <(uv export --no-dev --format requirements-txt)
+
+  docker:
+    name: Docker Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build Docker image
+        run: docker build -t tg-tunnel:ci .
+      - name: Verify image starts (smoke test)
+        run: |
+          docker run --rm \
+            -e TELEGRAM_BOT_TOKEN=00000000:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA \
+            -e TELEGRAM_TARGET_CHAT_ID=-100000000000 \
+            -e DATABASE_URL=postgresql+psycopg://u:p@localhost/db \
+            -e CALLBACK_SIGNING_SECRET=strong-signing-secret-32-chars!! \
+            -e TELEGRAM_WEBHOOK_SECRET=strong-webhook-secret-32-chars!! \
+            tg-tunnel:ci python -c "from tg_tunnel.core.config import Settings; print('config OK')"
+
   build:
     name: Build & Push Image
-    needs: lint
+    needs: [lint, test, typecheck, security, docker]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     permissions:
       contents: write

@@ -8,7 +8,7 @@ async def connect() -> psycopg.AsyncConnection:
     dsn = str(settings.DATABASE_URL)
     if dsn.startswith("postgresql+psycopg"):
         dsn = dsn.replace("postgresql+psycopg", "postgresql")
-    return await psycopg.AsyncConnection.connect(dsn, row_factory=dict_row)
+    return await psycopg.AsyncConnection.connect(dsn, row_factory=dict_row)  # type: ignore[arg-type]
 
 
 async def get_conn() -> AsyncIterator[psycopg.AsyncConnection]:
@@ -19,13 +19,13 @@ async def get_conn() -> AsyncIterator[psycopg.AsyncConnection]:
 async def fetchone(aconn: psycopg.AsyncConnection, sql: str, *params: Any) -> dict | None:
     async with aconn.cursor() as cur:
         await cur.execute(sql, params)
-        return await cur.fetchone()
+        return await cur.fetchone()  # type: ignore[return-value]
 
 
 async def fetchall(aconn: psycopg.AsyncConnection, sql: str, *params: Any) -> list[dict]:
     async with aconn.cursor() as cur:
         await cur.execute(sql, params)
-        return await cur.fetchall() or []
+        return await cur.fetchall() or []  # type: ignore[return-value]
 
 
 async def execute(aconn: psycopg.AsyncConnection, sql: str, *params: Any) -> None:
