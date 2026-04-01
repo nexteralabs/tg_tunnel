@@ -62,7 +62,7 @@ jobs:
           python-version: "3.12"
       - run: uv sync --group dev
       - name: Audit dependencies for known vulnerabilities
-        run: uv run pip-audit --require-hashes -r <(uv export --no-dev --format requirements-txt)
+        run: uv run pip-audit -r <(uv export --no-dev --no-emit-project --format requirements-txt)
 
   docker:
     name: Docker Build
@@ -79,7 +79,7 @@ jobs:
             -e DATABASE_URL=postgresql+psycopg://u:p@localhost/db \
             -e CALLBACK_SIGNING_SECRET=strong-signing-secret-32-chars!! \
             -e TELEGRAM_WEBHOOK_SECRET=strong-webhook-secret-32-chars!! \
-            tg-tunnel:ci python -c "from tg_tunnel.core.config import Settings; print('config OK')"
+            tg-tunnel:ci uv run --no-sync python -c "from tg_tunnel.core.config import Settings; print('config OK')"
 
   build:
     name: Build & Push Image
