@@ -12,4 +12,4 @@ RUN uv lock && uv sync --frozen --no-dev
 
 EXPOSE 8100
 
-CMD ["uv", "run", "--no-sync", "prompt-cli", "run_api"]
+CMD ["uv", "run", "--no-sync", "prompt-cli", "run_api", "--host", "0.0.0.0"]
