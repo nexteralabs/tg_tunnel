@@ -1,6 +1,6 @@
 # TG-Tunnel
 
-[![CI](https://github.com/NexteraLabs/telegram_prompt_api/actions/workflows/ci.yml/badge.svg)](https://github.com/NexteraLabs/telegram_prompt_api/actions/workflows/ci.yml)
+[![CI](https://github.com/NexteraLabs/tg-tunnel/actions/workflows/ci.yml/badge.svg)](https://github.com/NexteraLabs/tg-tunnel/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 
@@ -180,7 +180,7 @@ Each `POST /register-channel` spawns a dedicated polling loop for that channel's
 ### Docker (recommended)
 
 ```bash
-git clone https://github.com/NexteraLabs/telegram_prompt_api.git tg-tunnel
+git clone https://github.com/NexteraLabs/tg-tunnel.git tg-tunnel
 cd tg-tunnel
 cp .env.example .env
 # Edit .env — see Configuration below

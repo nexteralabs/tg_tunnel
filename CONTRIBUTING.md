@@ -1,4 +1,4 @@
-# Contributing to telegram_prompt_api
+# Contributing to tg-tunnel
 
 Thank you for your interest in contributing! This guide explains how to set up the project locally, report issues, and submit improvements.
 
@@ -7,8 +7,8 @@ Thank you for your interest in contributing! This guide explains how to set up t
 1. Fork the repository
 2. Clone your fork:
    ```bash
-   git clone https://github.com/YOUR_USERNAME/telegram_prompt_api.git
-   cd telegram_prompt_api
+   git clone https://github.com/YOUR_USERNAME/tg-tunnel.git
+   cd tg-tunnel
    ```
 3. Create a feature branch:
    ```bash

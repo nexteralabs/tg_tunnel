@@ -1,7 +1,7 @@
 services:
   api:
-    image: ghcr.io/nexteralabs/telegram_prompt_api:${IMAGE_TAG:-latest}
-    container_name: telegram-prompt-api
+    image: ghcr.io/nexteralabs/tg-tunnel:${IMAGE_TAG:-latest}
+    container_name: tg-tunnel
     restart: unless-stopped
     ports: ["8100:8100"]
     env_file: .env
