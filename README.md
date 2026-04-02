@@ -10,11 +10,11 @@
 
 ## Why TG-Tunnel?
 
-Modern AI agents are powerful but isolated. They can plan, reason, and execute — but the moment they need a human decision, they're stuck. No clean way to pause, ask, and resume. No way to surface an alert with context. No dedicated channel per agent so conversations don't collide.
+Modern AI agents are powerful but isolated. They can plan, reason, and execute. But the moment they need a human decision, they're stuck. No clean way to pause, ask, and resume. No way to surface an alert with context. No dedicated channel per agent so conversations don't collide.
 
 TG-Tunnel is the missing piece. One self-hosted service that turns Telegram into a full **human-agent communication bus**:
 
-- **Interactive decision gates** — send a question with up to 10 labeled buttons; your agent gets a signed webhook the instant a human taps one
+- **Interactive decision gates** - send a question with up to 10 labeled buttons; your agent gets a signed webhook the instant a human taps one
 - **Free-text mid-workflow input** — accept typed replies without long-running sockets or polling loops
 - **Per-agent dedicated channels** — register unlimited bots, each with its own Telegram chat; finance-bot, ops-bot, support-bot all isolated and routed independently
 - **Rich media prompts** — attach images by URL, file upload, or local path; give humans the full picture before they decide
@@ -30,8 +30,8 @@ The result: a clean **human-in-the-loop** pattern that works with any language, 
   Agent B  ─── HTTP ──► │                  TG-Tunnel                  │ ──► 👤 On-call (free text)
   Agent C  ─── HTTP ──► │      (your self-hosted comms backbone)      │ ──► 👤 Manager (approval gate)
                         │                                             │
-  Agent A  ◄─ webhook ─ │   signed callbacks · per-channel routing   │ ◄── tap / reply
-  Agent B  ◄─ webhook ─ │   HMAC auth · auto-retry · long-poll       │
+  Agent A  ◄─ webhook ─ │   signed callbacks · per-channel routing    │ ◄── tap / reply
+  Agent B  ◄─ webhook ─ │   HMAC auth · auto-retry · long-poll        │
   Agent C  ◄─ webhook ─ │                                             │
                         └─────────────────────────────────────────────┘
 ```
@@ -42,13 +42,13 @@ The result: a clean **human-in-the-loop** pattern that works with any language, 
 
 TG-Tunnel ships two complementary APIs under one service:
 
-### Prompt API — Ask, then act
+### Prompt API - Ask, then act
 
-Send an interactive prompt to Telegram. Your agent gets a signed webhook callback the moment a human responds — by button tap or free text.
+Send an interactive prompt to Telegram. Your agent gets a signed webhook callback the moment a human responds by button tap or free text.
 
 **Perfect for:** deployment approvals, anomaly escalations, agent clarification gates, multi-step workflow checkpoints.
 
-### Channel Gateway — Always-on bidirectional messaging
+### Channel Gateway, Always-on bidirectional messaging
 
 Register a Telegram channel with a dedicated bot. TG-Tunnel polls for new messages and forwards them to your callback URL. Your backend sends replies via HTTP. Multiple agents, multiple channels, each isolated.
 
@@ -154,21 +154,21 @@ TG-Tunnel handles all the long-polling internally — no public-facing webhook U
 
 ```
                            TG-Tunnel (port 8100)
-                          ┌──────────────────────────────────────────┐
-                          │                                          │
-  POST /v1/prompts ───────►  Prompt API     ──► Telegram Bot API    │
-  GET  /v1/prompts/:id    │  (aiogram)       ◄── button callbacks   │
+                           ┌─────────────────────────────────────────┐
+                           │                                         │
+  POST /v1/prompts ───────►│  Prompt API     ──► Telegram Bot API    │
+  GET  /v1/prompts/:id     │  (aiogram)       ◄── button callbacks   │
   GET  /v1/prompts/pending │                                         │
-                          │                                          │
-  POST /register-channel  ►  Channel        ──► Telegram Bot API    │
-  POST /send              │  Gateway         ◄── long poll loop     │
-  GET  /channels          │  (per-channel                           │
-  DEL  /channels/:id      │   asyncio task)                         │
-                          │                                          │
-                          │  PostgreSQL ──── prompts                 │
-                          │                 channels                 │
-                          │                 prompt_options           │
-                          └──────────────────────────────────────────┘
+                           │                                         │
+  POST /register-channel ─►│  Channel        ──► Telegram Bot API    │
+  POST /send               │  Gateway         ◄── long poll loop     │
+  GET  /channels           │  (per-channel                           │
+  DEL  /channels/:id       │   asyncio task)                         │
+                           │                                         │
+                           │  PostgreSQL ──── prompts                │
+                           │                 channels                │
+                           │                 prompt_options          │
+                           └─────────────────────────────────────────┘
 ```
 
 Each `POST /register-channel` spawns a dedicated polling loop for that channel's bot. Channels are restored automatically on startup from the database.
