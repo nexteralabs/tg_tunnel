@@ -69,44 +69,16 @@ jobs:
 
   notify:
     needs: build-push
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     steps:
-      - name: Notify SRE Agent
-        shell: powershell
-        env:
-          IMAGE:                    ${{ needs.build-push.outputs.image }}
-          SHA:                      ${{ github.sha }}
-          REPO:                     ${{ github.repository }}
-          REF:                      ${{ github.ref_name }}
-          SRE_URL:                  ${{ vars.SRE_AGENT_URL }}
-          TELEGRAM_BOT_TOKEN:       ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_TARGET_CHAT_ID:  ${{ secrets.TELEGRAM_TARGET_CHAT_ID }}
-          TELEGRAM_WEBHOOK_SECRET:  ${{ secrets.TELEGRAM_WEBHOOK_SECRET }}
-          DATABASE_URL:             ${{ secrets.DATABASE_URL }}
-          CALLBACK_SIGNING_SECRET:  ${{ secrets.CALLBACK_SIGNING_SECRET }}
-          TELEGRAM_MESSAGE_PARSE_MODE: ${{ vars.TELEGRAM_MESSAGE_PARSE_MODE }}
-          TELEGRAM_USE_WEBHOOK:     ${{ vars.TELEGRAM_USE_WEBHOOK }}
-          PUBLIC_WEBHOOK_URL:       ${{ vars.PUBLIC_WEBHOOK_URL }}
-          CLEAN_ON_BOOT:            ${{ vars.CLEAN_ON_BOOT }}
+      - name: Dispatch to tg_tunnel_notify
         run: |
-          $payload = @{
-            repo  = $env:REPO
-            image = $env:IMAGE
-            sha   = $env:SHA
-            ref   = $env:REF
-            env   = @{
-              TELEGRAM_BOT_TOKEN          = $env:TELEGRAM_BOT_TOKEN
-              TELEGRAM_TARGET_CHAT_ID     = $env:TELEGRAM_TARGET_CHAT_ID
-              TELEGRAM_WEBHOOK_SECRET     = $env:TELEGRAM_WEBHOOK_SECRET
-              DATABASE_URL                = $env:DATABASE_URL
-              CALLBACK_SIGNING_SECRET     = $env:CALLBACK_SIGNING_SECRET
-              TELEGRAM_MESSAGE_PARSE_MODE = $env:TELEGRAM_MESSAGE_PARSE_MODE
-              TELEGRAM_USE_WEBHOOK        = $env:TELEGRAM_USE_WEBHOOK
-              PUBLIC_WEBHOOK_URL          = $env:PUBLIC_WEBHOOK_URL
-              CLEAN_ON_BOOT               = $env:CLEAN_ON_BOOT
-            }
-          } | ConvertTo-Json -Compress -Depth 5
-
-          Write-Host "Notifying SRE Agent at $env:SRE_URL/deploy"
-          $response = Invoke-RestMethod -Method POST -Uri "$env:SRE_URL/deploy" -ContentType "application/json" -Body $payload
-          Write-Host "Response: $($response | ConvertTo-Json)"
+          gh api repos/NexteraLabs/tg_tunnel_notify/dispatches \
+            --method POST \
+            -f event_type=tg-tunnel-deploy \
+            -f "client_payload[image]=${{ needs.build-push.outputs.image }}" \
+            -f "client_payload[sha]=${{ github.sha }}" \
+            -f "client_payload[repo]=${{ github.repository }}" \
+            -f "client_payload[ref]=${{ github.ref_name }}"
+        env:
+          GH_TOKEN: ${{ secrets.NOTIFY_DISPATCH_TOKEN }}
