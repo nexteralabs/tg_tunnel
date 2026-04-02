@@ -25,7 +25,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.11", "3.12"]
+        python-version: ["3.12"]
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v4
@@ -35,7 +35,7 @@ jobs:
       - name: Run tests with coverage
         run: uv run pytest tests/ -q --cov=tg_tunnel --cov-report=xml --cov-report=term-missing
       - name: Upload coverage report
-        if: matrix.python-version == '3.12'
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: coverage-report
