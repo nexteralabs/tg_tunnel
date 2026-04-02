@@ -2,7 +2,7 @@
 
 ## Project Configuration
 
-- **Language:** Python 3.12
+- **Language:** Python 3.11+ (CI and Docker run on 3.12)
 - **Framework:** FastAPI + uvicorn
 - **Package manager:** `uv`
 - **Test runner:** `uv run pytest`
