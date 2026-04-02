@@ -25,15 +25,15 @@ TG-Tunnel is the missing piece. One self-hosted service that turns Telegram into
 The result: a clean **human-in-the-loop** pattern that works with any language, any framework, any orchestrator — in under 30 seconds.
 
 ```
-                        ┌─────────────────────────────────────────────┐
-  Agent A  ─── HTTP ──► │                                             │ ──► 👤 Operator (buttons + image)
-  Agent B  ─── HTTP ──► │                  TG-Tunnel                  │ ──► 👤 On-call (free text)
-  Agent C  ─── HTTP ──► │      (your self-hosted comms backbone)      │ ──► 👤 Manager (approval gate)
-                        │                                             │
-  Agent A  ◄─ webhook ─ │   signed callbacks · per-channel routing    │ ◄── tap / reply
-  Agent B  ◄─ webhook ─ │   HMAC auth · auto-retry · long-poll        │
-  Agent C  ◄─ webhook ─ │                                             │
-                        └─────────────────────────────────────────────┘
+                       ┌─────────────────────────────────────────┐
+ Agent A  ─── HTTP ──► │                                         │ ──► 👤 Operator (buttons + image)
+ Agent B  ─── HTTP ──► │                TG-Tunnel                │ ──► 👤 On-call (free text)
+ Agent C  ─── HTTP ──► │    (your self-hosted comms backbone)    │ ──► 👤 Manager (approval gate)
+                       │                                         │
+ Agent A  ◄─ webhook ─ │ signed callbacks · per-channel routing  │ ◄── tap / reply
+ Agent B  ◄─ webhook ─ │ HMAC auth · auto-retry · long-poll      │
+ Agent C  ◄─ webhook ─ │                                         │
+                       └─────────────────────────────────────────┘
 ```
 
 ---
