@@ -3,7 +3,7 @@ name = "tg-tunnel"
 version = "0.1.27"
 description = "Self-hosted HTTP gateway that gives AI agents a direct line to Telegram — send prompts, collect answers, bridge two-way conversations"
 readme = "README.md"
-requires-python = ">=3.11,<3.13"
+requires-python = "==3.12.*"
 dependencies = [
     "fastapi>=0.115.0",
     "uvicorn[standard]>=0.30.0",

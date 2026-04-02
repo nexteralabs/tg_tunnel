@@ -1,13 +1,24 @@
-# CLAUDE.md
+# tg-tunnel
 
-This file provides guidance to Claude Code when working with this repository.
+## Project Configuration
+
+- **Language:** Python 3.12
+- **Framework:** FastAPI + uvicorn
+- **Package manager:** `uv`
+- **Test runner:** `uv run pytest`
+- **Lint/format:** `uv run ruff check src/ && uv run ruff format src/`
+- **Ticket system:** jira
+- **Jira base URL:** https://ne-projects.atlassian.net
+
+## Development Workflow
+
+This project uses the codesmith workflow. Start any dev task by describing what you want to build — the workflow drives automatically through brainstorm → workspace → plan → implement → review → ship.
 
 ## Core Rules
 
 - **Never implement features not explicitly asked for** — propose first, then implement
 - **Never implement fallback mechanisms with default values** — they hide bugs and make debugging hard
 - **No emojis in `print()` calls** — causes `UnicodeEncodeError` on Windows
-- Think like a senior developer: understand the full impact before changing anything
 - Make minimal, targeted changes — don't fix multiple things at once
 
 ## Workflow
@@ -16,29 +27,33 @@ This file provides guidance to Claude Code when working with this repository.
 2. Plan before implementing — think MVP, not over-engineered
 3. Share the plan and **wait for approval** before writing code
 4. Update the plan as you go with what was changed and why
-5. Run `ruff check` and `ruff format` after any code changes
-6. Run `pytest` after any code changes
+5. Run `uv run ruff check src/` and `uv run ruff format src/` after any code changes
+6. Run `uv run pytest` after any code changes
 
-## Development Commands
+## Core Principles
 
-```bash
-# Setup
-uv sync
-cp .env.example .env
-docker compose up -d
-uv run prompt-cli init_db
+### Plan Mode Default
 
-# Run API (port 8100)
-uv run prompt-cli run_api
+Enter plan mode for any non-trivial task (3+ steps or architectural decisions). If something goes wrong, STOP and re-plan — don't keep pushing.
 
-# Code quality
-uv run ruff check src/
-uv run ruff format src/
-uv run pytest
+### Verification Before Done
 
-# DB reset
-uv run prompt-cli fresh_start
-```
+Never mark a task complete without proving it works. Run tests, check logs, demonstrate correctness. Never say "should work" — prove it.
+
+### Simplicity First
+
+Make every change as simple as possible. Three clear lines beat a premature abstraction. No feature flags for hypotheticals. No helpers for one-time operations.
+
+### No Laziness
+
+Find root causes. Avoid temporary fixes. Maintain senior-level engineering standards.
+
+## Task Management
+
+1. Write the plan in `.claude/tasks/todo.md` with checkable items
+2. Confirm the plan before implementation
+3. Mark items complete as you go
+4. Add a review section to `.claude/tasks/todo.md` when done
 
 ## Architecture
 
@@ -88,6 +103,6 @@ src/tg_tunnel/
 ### Design Constraints
 
 - **Single-user system** — no multi-tenancy, no auth, no rate limiting
-- **Long polling by default** — webhooks optional, network may not allow inbound
+- **Long polling by default** — webhooks optional
 - **Simple IDs** — `#123` counter format (user-facing), UUID internally
 - **Tokens as SecretStr** — redacted from logs via regex filter
