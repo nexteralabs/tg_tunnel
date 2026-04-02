@@ -1,5 +1,5 @@
 [project]
-name = "tg-tunnel"
+name = "tg-gateway"
 version = "0.1.33"
 description = "Self-hosted HTTP gateway that gives AI agents a direct line to Telegram — send prompts, collect answers, bridge two-way conversations"
 readme = "README.md"
@@ -20,7 +20,7 @@ dependencies = [
 ]
 
 [project.scripts]
-prompt-cli = "tg_tunnel.cli:app"
+prompt-cli = "tg_gateway.cli:app"
 
 [dependency-groups]
 dev = [
@@ -42,7 +42,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/tg_tunnel"]
+packages = ["src/tg_gateway"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"

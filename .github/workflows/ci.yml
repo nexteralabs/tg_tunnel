@@ -33,7 +33,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - run: uv sync --group dev
       - name: Run tests with coverage
-        run: uv run pytest tests/ -q --cov=tg_tunnel --cov-report=xml --cov-report=term-missing
+        run: uv run pytest tests/ -q --cov=tg_gateway --cov-report=xml --cov-report=term-missing
       - name: Upload coverage report
         if: always()
         uses: actions/upload-artifact@v4
@@ -50,7 +50,7 @@ jobs:
         with:
           python-version: "3.12"
       - run: uv sync --group dev
-      - run: uv run mypy src/tg_tunnel --ignore-missing-imports --no-error-summary
+      - run: uv run mypy src/tg_gateway --ignore-missing-imports --no-error-summary
 
   security:
     name: Security Audit
@@ -70,7 +70,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Build Docker image
-        run: docker build -t tg-tunnel:ci .
+        run: docker build -t tg-gateway:ci .
       - name: Verify image starts (smoke test)
         run: |
           docker run --rm \
@@ -79,5 +79,5 @@ jobs:
             -e DATABASE_URL=postgresql+psycopg://u:p@localhost/db \
             -e CALLBACK_SIGNING_SECRET=strong-signing-secret-32-chars!! \
             -e TELEGRAM_WEBHOOK_SECRET=strong-webhook-secret-32-chars!! \
-            tg-tunnel:ci uv run --no-sync python -c "from tg_tunnel.core.config import Settings; print('config OK')"
+            tg-gateway:ci uv run --no-sync python -c "from tg_gateway.core.config import Settings; print('config OK')"
 

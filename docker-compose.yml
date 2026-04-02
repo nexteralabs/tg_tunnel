@@ -1,7 +1,7 @@
 services:
   api:
-    image: ghcr.io/nexteralabs/tg-tunnel:${IMAGE_TAG:-latest}
-    container_name: tg-tunnel
+    image: ghcr.io/nexteralabs/tg-gateway:${IMAGE_TAG:-latest}
+    container_name: tg-gateway
     restart: unless-stopped
     ports: ["8100:8100"]
     env_file: .env

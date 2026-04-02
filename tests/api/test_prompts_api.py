@@ -17,7 +17,7 @@ def reset_use_auth():
     test_auth.py mutates the settings singleton directly. This fixture prevents
     that pollution from causing 401 responses on unrelated prompt endpoint tests.
     """
-    from tg_tunnel.core.config import settings
+    from tg_gateway.core.config import settings
     settings.USE_AUTH = False
     yield
     settings.USE_AUTH = False
@@ -49,7 +49,7 @@ class TestCreatePrompt:
             "media_path": "/data/media/image.jpg",
         }
         with patch(
-            "tg_tunnel.services.prompts.service.create_and_post_prompt",
+            "tg_gateway.services.prompts.service.create_and_post_prompt",
             new=AsyncMock(side_effect=ValueError("Cannot provide multiple media sources")),
         ):
             resp = await client.post("/v1/prompts", json=payload)
@@ -63,7 +63,7 @@ class TestCreatePrompt:
             "media_path": "/some/path.jpg",
         }
         with patch(
-            "tg_tunnel.services.prompts.service.create_and_post_prompt",
+            "tg_gateway.services.prompts.service.create_and_post_prompt",
             new=AsyncMock(side_effect=ValueError("Invalid media path")),
         ):
             resp = await client.post("/v1/prompts", json=payload)
@@ -76,7 +76,7 @@ class TestCreatePrompt:
             "message_id": 42,
         }
         with patch(
-            "tg_tunnel.services.prompts.service.create_and_post_prompt",
+            "tg_gateway.services.prompts.service.create_and_post_prompt",
             new=AsyncMock(return_value=("#1", fake_row)),
         ):
             resp = await client.post("/v1/prompts", json=_BASE_PROMPT)
@@ -89,7 +89,7 @@ class TestCreatePrompt:
     async def test_create_prompt_file_not_found_returns_generic_error(self, client):
         """FileNotFoundError must produce a generic error response — no filesystem path leaked."""
         with patch(
-            "tg_tunnel.services.prompts.service.create_and_post_prompt",
+            "tg_gateway.services.prompts.service.create_and_post_prompt",
             new=AsyncMock(side_effect=FileNotFoundError("/data/media/missing.jpg")),
         ):
             resp = await client.post(
@@ -110,7 +110,7 @@ class TestListPendingPrompts:
     async def test_list_pending_returns_empty_list(self, client):
         """GET /v1/prompts/pending returns [] when no pending prompts exist."""
         with patch(
-            "tg_tunnel.services.prompts.models.list_pending",
+            "tg_gateway.services.prompts.models.list_pending",
             new=AsyncMock(return_value=[]),
         ):
             resp = await client.get("/v1/prompts/pending")
@@ -143,7 +143,7 @@ class TestListPendingPrompts:
             },
         ]
         with patch(
-            "tg_tunnel.services.prompts.models.list_pending",
+            "tg_gateway.services.prompts.models.list_pending",
             new=AsyncMock(return_value=fake_rows),
         ):
             resp = await client.get("/v1/prompts/pending")
@@ -159,7 +159,7 @@ class TestGetPrompt:
     async def test_get_prompt_not_found_returns_404(self, client):
         """GET /v1/prompts/#999 when prompt does not exist returns 404."""
         with patch(
-            "tg_tunnel.services.prompts.models.get_prompt",
+            "tg_gateway.services.prompts.models.get_prompt",
             new=AsyncMock(return_value=None),
         ):
             resp = await client.get("/v1/prompts/%23999")
@@ -179,7 +179,7 @@ class TestGetPrompt:
             "answer": None,
         }
         with patch(
-            "tg_tunnel.services.prompts.models.get_prompt",
+            "tg_gateway.services.prompts.models.get_prompt",
             new=AsyncMock(return_value=fake_row),
         ):
             resp = await client.get("/v1/prompts/%231")

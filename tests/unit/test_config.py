@@ -6,7 +6,7 @@ import pytest
 from pydantic import ValidationError
 
 # Import the class, NOT the singleton
-from tg_tunnel.core.config import Settings
+from tg_gateway.core.config import Settings
 
 
 def _base_env(monkeypatch, **overrides):

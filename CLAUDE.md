@@ -1,4 +1,4 @@
-# tg-tunnel
+# tg-gateway
 
 ## Project Configuration
 
@@ -65,7 +65,7 @@ Find root causes. Avoid temporary fixes. Maintain senior-level engineering stand
 ### Structure
 
 ```
-src/tg_tunnel/
+src/tg_gateway/
 ├── core/           # config, db, telegram_bot, security, notifier, util
 ├── services/
 │   ├── prompts/    # models, schemas, service, handlers

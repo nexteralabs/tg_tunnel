@@ -1,6 +1,6 @@
 app:
-  name: tg-tunnel
-  image: ghcr.io/nexteralabs/tg-tunnel:latest
+  name: tg-gateway
+  image: ghcr.io/nexteralabs/tg-gateway:latest
 
 deploy:
   env_file: .env
@@ -18,7 +18,7 @@ health:
 monitoring:
   sources:
     - type: docker_logs
-      container: tg-tunnel
+      container: tg-gateway
     - type: http
       url: http://localhost:8100/healthz
       interval: 60s

@@ -20,7 +20,7 @@ app = typer.Typer(add_completion=False)
 def run_api(host: str = "127.0.0.1", port: int = 8100):
     """Run FastAPI server."""
     set_event_loop_policy()
-    uvicorn.run("tg_tunnel.api.app:app", host=host, port=port, reload=False)
+    uvicorn.run("tg_gateway.api.app:app", host=host, port=port, reload=False)
 
 
 # REMOVED: run_bot command

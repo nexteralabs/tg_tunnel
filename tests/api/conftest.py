@@ -26,7 +26,7 @@ async def client():
     FastAPI AsyncClient with all external dependencies stubbed out.
 
     Patches applied:
-      - tg_tunnel.core.db.get_conn         → no-op async generator
+      - tg_gateway.core.db.get_conn         → no-op async generator
       - channel poller restore_all_on_startup   → no-op coroutine
       - channel models register_channel         → no-op coroutine
       - prompt models clean_on_boot             → no-op coroutine
@@ -35,26 +35,26 @@ async def client():
     fake_get_conn, _conn = _make_null_conn()
 
     with (
-        patch("tg_tunnel.core.db.get_conn", new=fake_get_conn),
+        patch("tg_gateway.core.db.get_conn", new=fake_get_conn),
         patch(
-            "tg_tunnel.services.channels.poller.restore_all_on_startup",
+            "tg_gateway.services.channels.poller.restore_all_on_startup",
             new=AsyncMock(),
         ),
         patch(
-            "tg_tunnel.services.channels.models.register_channel",
+            "tg_gateway.services.channels.models.register_channel",
             new=AsyncMock(),
         ),
         patch(
-            "tg_tunnel.services.prompts.models.clean_on_boot",
+            "tg_gateway.services.prompts.models.clean_on_boot",
             new=AsyncMock(),
         ),
         patch(
-            "tg_tunnel.core.telegram_bot.post_prompt_to_chat",
+            "tg_gateway.core.telegram_bot.post_prompt_to_chat",
             new=AsyncMock(),
         ),
     ):
         # Import inside the patch block so the app is created with mocked deps
-        from tg_tunnel.api.app import app
+        from tg_gateway.api.app import app
 
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
             yield ac
@@ -66,7 +66,7 @@ async def auth_client(monkeypatch):
     AsyncClient with USE_AUTH=True and API_KEY="test-key-123".
     Uses monkeypatch on the live settings singleton so it is restored automatically.
     """
-    from tg_tunnel.core.config import settings
+    from tg_gateway.core.config import settings
     from pydantic import SecretStr
 
     monkeypatch.setattr(settings, "USE_AUTH", True)
@@ -75,25 +75,25 @@ async def auth_client(monkeypatch):
     fake_get_conn, _conn = _make_null_conn()
 
     with (
-        patch("tg_tunnel.core.db.get_conn", new=fake_get_conn),
+        patch("tg_gateway.core.db.get_conn", new=fake_get_conn),
         patch(
-            "tg_tunnel.services.channels.poller.restore_all_on_startup",
+            "tg_gateway.services.channels.poller.restore_all_on_startup",
             new=AsyncMock(),
         ),
         patch(
-            "tg_tunnel.services.channels.models.register_channel",
+            "tg_gateway.services.channels.models.register_channel",
             new=AsyncMock(),
         ),
         patch(
-            "tg_tunnel.services.prompts.models.clean_on_boot",
+            "tg_gateway.services.prompts.models.clean_on_boot",
             new=AsyncMock(),
         ),
         patch(
-            "tg_tunnel.core.telegram_bot.post_prompt_to_chat",
+            "tg_gateway.core.telegram_bot.post_prompt_to_chat",
             new=AsyncMock(),
         ),
     ):
-        from tg_tunnel.api.app import app
+        from tg_gateway.api.app import app
 
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
             yield ac

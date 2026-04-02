@@ -1,6 +1,6 @@
-# TG-Tunnel
+# TG-Gateway
 
-[![CI](https://github.com/NexteraLabs/tg_tunnel/actions/workflows/ci.yml/badge.svg)](https://github.com/NexteraLabs/tg_tunnel/actions/workflows/ci.yml)
+[![CI](https://github.com/NexteraLabs/tg_gateway/actions/workflows/ci.yml/badge.svg)](https://github.com/NexteraLabs/tg_gateway/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 
@@ -8,18 +8,18 @@
 
 ---
 
-## Why TG-Tunnel?
+## Why TG-Gateway?
 
 Modern AI agents are powerful but isolated. They can plan, reason, and execute. But the moment they need a human decision, they're stuck. No clean way to pause, ask, and resume. No way to surface an alert with context. No dedicated channel per agent so conversations don't collide.
 
-TG-Tunnel is the missing piece. One self-hosted service that turns Telegram into a full **human-agent communication bus**:
+TG-Gateway is the missing piece. One self-hosted service that turns Telegram into a full **human-agent communication bus**:
 
 - **Interactive decision gates** - send a question with up to 10 labeled buttons; your agent gets a signed webhook the instant a human taps one
 - **Free-text mid-workflow input** — accept typed replies without long-running sockets or polling loops
 - **Per-agent dedicated channels** — register unlimited bots, each with its own Telegram chat; finance-bot, ops-bot, support-bot all isolated and routed independently
 - **Rich media prompts** — attach images by URL, file upload, or local path; give humans the full picture before they decide
-- **Always-on bidirectional messaging** — agents send, humans reply, TG-Tunnel forwards everything back to your callback URL with automatic retry
-- **Signed callbacks** — every outbound webhook carries an HMAC-SHA256 signature so you know it came from TG-Tunnel, not an attacker
+- **Always-on bidirectional messaging** — agents send, humans reply, TG-Gateway forwards everything back to your callback URL with automatic retry
+- **Signed callbacks** — every outbound webhook carries an HMAC-SHA256 signature so you know it came from TG-Gateway, not an attacker
 - **Zero public endpoint required** — long-polling means it runs behind NAT, a firewall, or a laptop with no exposed port
 
 The result: a clean **human-in-the-loop** pattern that works with any language, any framework, any orchestrator — in under 30 seconds.
@@ -27,7 +27,7 @@ The result: a clean **human-in-the-loop** pattern that works with any language, 
 ```
                        ┌─────────────────────────────────────────┐
  Agent A  ─── HTTP ──► │                                         │ ──► 👤 Operator (buttons + image)
- Agent B  ─── HTTP ──► │                TG-Tunnel                │ ──► 👤 On-call (free text)
+ Agent B  ─── HTTP ──► │                TG-Gateway                │ ──► 👤 On-call (free text)
  Agent C  ─── HTTP ──► │    (your self-hosted comms backbone)    │ ──► 👤 Manager (approval gate)
                        │                                         │
  Agent A  ◄─ webhook ─ │ signed callbacks · per-channel routing  │ ◄── tap / reply
@@ -40,7 +40,7 @@ The result: a clean **human-in-the-loop** pattern that works with any language, 
 
 ## What's inside
 
-TG-Tunnel ships two complementary APIs under one service:
+TG-Gateway ships two complementary APIs under one service:
 
 ### Prompt API - Ask, then act
 
@@ -50,7 +50,7 @@ Send an interactive prompt to Telegram. Your agent gets a signed webhook callbac
 
 ### Channel Gateway, Always-on bidirectional messaging
 
-Register a Telegram channel with a dedicated bot. TG-Tunnel polls for new messages and forwards them to your callback URL. Your backend sends replies via HTTP. Multiple agents, multiple channels, each isolated.
+Register a Telegram channel with a dedicated bot. TG-Gateway polls for new messages and forwards them to your callback URL. Your backend sends replies via HTTP. Multiple agents, multiple channels, each isolated.
 
 **Perfect for:** AI assistant interfaces, on-call chat bots, multi-agent conversation routing, human-supervised pipelines.
 
@@ -76,7 +76,7 @@ curl -X POST http://localhost:8100/v1/prompts \
 # → {"prompt_id": "#1", "chat_id": "-100...", "message_id": 42}
 ```
 
-The Telegram user sees the message with two buttons. The moment they tap **Deploy**, TG-Tunnel POSTs to your `callback_url`:
+The Telegram user sees the message with two buttons. The moment they tap **Deploy**, TG-Gateway POSTs to your `callback_url`:
 
 ```json
 {
@@ -93,7 +93,7 @@ The Telegram user sees the message with two buttons. The moment they tap **Deplo
 }
 ```
 
-The callback is signed (`X-Signature: sha256=...`) so you can verify it came from TG-Tunnel and not an attacker.
+The callback is signed (`X-Signature: sha256=...`) so you can verify it came from TG-Gateway and not an attacker.
 
 ---
 
@@ -118,7 +118,7 @@ curl -X POST http://localhost:8100/send \
   -d '{"channel_id": "finance-bot", "text": "Quarterly report is ready for review."}'
 ```
 
-When the user replies in Telegram, TG-Tunnel forwards it to your `callback_url`:
+When the user replies in Telegram, TG-Gateway forwards it to your `callback_url`:
 
 ```json
 {
@@ -129,7 +129,7 @@ When the user replies in Telegram, TG-Tunnel forwards it to your `callback_url`:
 }
 ```
 
-TG-Tunnel handles all the long-polling internally — no public-facing webhook URL required.
+TG-Gateway handles all the long-polling internally — no public-facing webhook URL required.
 
 ---
 
@@ -153,7 +153,7 @@ TG-Tunnel handles all the long-polling internally — no public-facing webhook U
 ## Architecture
 
 ```
-                           TG-Tunnel (port 8100)
+                           TG-Gateway (port 8100)
                            ┌─────────────────────────────────────────┐
                            │                                         │
   POST /v1/prompts ───────►│  Prompt API     ──► Telegram Bot API    │
@@ -180,8 +180,8 @@ Each `POST /register-channel` spawns a dedicated polling loop for that channel's
 ### Docker (recommended)
 
 ```bash
-git clone https://github.com/NexteraLabs/tg_tunnel.git tg-tunnel
-cd tg-tunnel
+git clone https://github.com/NexteraLabs/tg_gateway.git tg-gateway
+cd tg-gateway
 cp .env.example .env
 # Edit .env — see Configuration below
 docker compose up -d
@@ -227,7 +227,7 @@ All configuration is via environment variables (or `.env` file).
 | `CHANNEL_CALLBACK_RETRY_DELAY` | — | `5` | Seconds between retry attempts |
 | `CHANNEL_OFFLINE_NOTIFICATION` | — | `"Assistant offline..."` | Message sent to Telegram when all retries fail |
 
-> **Security note:** `CALLBACK_SIGNING_SECRET` and `TELEGRAM_WEBHOOK_SECRET` must be set to strong unique values. TG-Tunnel will **refuse to start** if either is left at the default placeholder.
+> **Security note:** `CALLBACK_SIGNING_SECRET` and `TELEGRAM_WEBHOOK_SECRET` must be set to strong unique values. TG-Gateway will **refuse to start** if either is left at the default placeholder.
 
 ---
 
@@ -300,7 +300,7 @@ if not verify_signature(raw_body, request.headers["X-Signature"], CALLBACK_SIGNI
 import httpx
 
 async def request_deploy_approval(version: str) -> bool:
-    resp = httpx.post("http://tg-tunnel:8100/v1/prompts", json={
+    resp = httpx.post("http://tg-gateway:8100/v1/prompts", json={
         "text": f"Deploy {version} to production?",
         "options": ["Deploy ✅", "Cancel ❌"],
         "callback_url": "https://ci.internal/on_deploy_answer",
@@ -323,7 +323,7 @@ agents = {
 
 # Register each agent's dedicated channel once
 for name, cfg in agents.items():
-    httpx.post("http://tg-tunnel:8100/register-channel", json={
+    httpx.post("http://tg-gateway:8100/register-channel", json={
         **cfg,
         "telegram_chat_id": CHAT_IDS[name],
         "callback_url": f"https://agents.internal/{name}/on_message",
@@ -333,7 +333,7 @@ for name, cfg in agents.items():
 ### Anomaly escalation with context
 
 ```python
-httpx.post("http://tg-tunnel:8100/v1/prompts", json={
+httpx.post("http://tg-gateway:8100/v1/prompts", json={
     "text": (
         "🚨 <b>CPU spike detected</b> on api-prod-3\n"
         "Current: 94% | Avg: 23% | Duration: 8 min\n\n"
