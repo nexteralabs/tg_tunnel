@@ -15,7 +15,7 @@ We will acknowledge receipt within 48 hours and provide a timeline for addressin
 
 ## Scope
 
-This policy covers the `telegram_prompt_api` service, including:
+This policy covers the `tg-tunnel` service, including:
 
 - The FastAPI application and all endpoints
 - The channel gateway and prompt services

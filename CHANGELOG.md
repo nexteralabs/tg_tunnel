@@ -46,8 +46,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Per-channel polling with auto-restore on startup
 - TTL-based prompt expiration
 
-[Unreleased]: https://github.com/NexteraLabs/telegram_prompt_api/compare/v0.1.12...HEAD
-[0.1.12]: https://github.com/NexteraLabs/telegram_prompt_api/compare/v0.1.11...v0.1.12
-[0.1.11]: https://github.com/NexteraLabs/telegram_prompt_api/compare/v0.1.10...v0.1.11
-[0.1.10]: https://github.com/NexteraLabs/telegram_prompt_api/compare/v0.1.0...v0.1.10
-[0.1.0]: https://github.com/NexteraLabs/telegram_prompt_api/releases/tag/v0.1.0
+[Unreleased]: https://github.com/NexteraLabs/tg-tunnel/compare/v0.1.12...HEAD
+[0.1.12]: https://github.com/NexteraLabs/tg-tunnel/compare/v0.1.11...v0.1.12
+[0.1.11]: https://github.com/NexteraLabs/tg-tunnel/compare/v0.1.10...v0.1.11
+[0.1.10]: https://github.com/NexteraLabs/tg-tunnel/compare/v0.1.0...v0.1.10
+[0.1.0]: https://github.com/NexteraLabs/tg-tunnel/releases/tag/v0.1.0
