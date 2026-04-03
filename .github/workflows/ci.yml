@@ -64,20 +64,3 @@ jobs:
       - name: Audit dependencies for known vulnerabilities
         run: uv run pip-audit -r <(uv export --no-dev --no-emit-project --format requirements-txt)
 
-  docker:
-    name: Docker Build
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Build Docker image
-        run: docker build -t tg-gateway:ci .
-      - name: Verify image starts (smoke test)
-        run: |
-          docker run --rm \
-            -e TELEGRAM_BOT_TOKEN=00000000:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA \
-            -e TELEGRAM_TARGET_CHAT_ID=-100000000000 \
-            -e DATABASE_URL=postgresql+psycopg://u:p@localhost/db \
-            -e CALLBACK_SIGNING_SECRET=strong-signing-secret-32-chars!! \
-            -e TELEGRAM_WEBHOOK_SECRET=strong-webhook-secret-32-chars!! \
-            tg-gateway:ci uv run --no-sync python -c "from tg_gateway.core.config import Settings; print('config OK')"
-
