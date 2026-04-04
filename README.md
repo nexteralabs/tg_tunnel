@@ -4,7 +4,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 
-**The human-in-the-loop backbone for AI agent fleets. Give every agent its own Telegram channel, let them ask questions with interactive buttons, attach images, route answers back via signed webhooks — all over plain HTTP, no webhook infrastructure, no polling code, no DevOps.**
+**The human-in-the-loop backbone for AI agent fleets. Give every agent its own Telegram channel. Allow sharing the same Telegram Bot to multiple agents. Let them ask questions with interactive buttons, attach images, route answers back via signed webhooks — all over plain HTTP, no webhook infrastructure, no polling code, no DevOps.**
 
 ---
 
@@ -27,7 +27,7 @@ The result: a clean **human-in-the-loop** pattern that works with any language, 
 ```
                        ┌─────────────────────────────────────────┐
  Agent A  ─── HTTP ──► │                                         │ ──► 👤 Operator (buttons + image)
- Agent B  ─── HTTP ──► │                TG-Gateway                │ ──► 👤 On-call (free text)
+ Agent B  ─── HTTP ──► │                TG-Gateway               │ ──► 👤 On-call (free text)
  Agent C  ─── HTTP ──► │    (your self-hosted comms backbone)    │ ──► 👤 Manager (approval gate)
                        │                                         │
  Agent A  ◄─ webhook ─ │ signed callbacks · per-channel routing  │ ◄── tap / reply
