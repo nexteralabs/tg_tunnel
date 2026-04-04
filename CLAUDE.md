@@ -7,18 +7,12 @@
 - **Package manager:** `uv`
 - **Test runner:** `uv run pytest`
 - **Lint/format:** `uv run ruff check src/ && uv run ruff format src/`
-- **Ticket system:** jira
-- **Jira base URL:** https://ne-projects.atlassian.net
-
-## Development Workflow
-
-This project uses the codesmith workflow. Start any dev task by describing what you want to build — the workflow drives automatically through brainstorm → workspace → plan → implement → review → ship.
+- **Ticket system:** GH Issues
 
 ## Core Rules
 
 - **Never implement features not explicitly asked for** — propose first, then implement
 - **Never implement fallback mechanisms with default values** — they hide bugs and make debugging hard
-- **No emojis in `print()` calls** — causes `UnicodeEncodeError` on Windows
 - Make minimal, targeted changes — don't fix multiple things at once
 
 ## Workflow
@@ -82,27 +76,3 @@ src/tg_gateway/
 - Created via REST, posted to Telegram with inline buttons
 - Answered via button click or text pattern `ID:#123 response`
 - Callback sent to caller via HMAC-signed webhook
-
-**Channel lifecycle**:
-- Register → start polling → forward messages to callback URL → send via `/send`
-- 3 retry attempts with 5s delay on callback failure
-
-### Configuration
-
-| Variable | Description |
-|---|---|
-| `TELEGRAM_BOT_TOKEN` | Default bot token for prompts |
-| `TELEGRAM_TARGET_CHAT_ID` | Default chat for prompts |
-| `DATABASE_URL` | PostgreSQL connection string |
-| `CALLBACK_SIGNING_SECRET` | HMAC key for webhook signatures |
-| `TELEGRAM_WEBHOOK_SECRET` | Webhook verification secret |
-| `CLEAN_ON_BOOT` | Auto-cleanup failed prompts on startup |
-| `CHANNEL_CALLBACK_MAX_RETRIES` | Callback retry attempts (default: 3) |
-| `CHANNEL_CALLBACK_RETRY_DELAY` | Delay between retries in seconds (default: 5) |
-
-### Design Constraints
-
-- **Single-user system** — no multi-tenancy, no auth, no rate limiting
-- **Long polling by default** — webhooks optional
-- **Simple IDs** — `#123` counter format (user-facing), UUID internally
-- **Tokens as SecretStr** — redacted from logs via regex filter
