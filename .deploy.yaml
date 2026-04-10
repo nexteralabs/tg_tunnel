@@ -17,6 +17,10 @@ health:
 
 monitoring:
   sources:
+    - type: docker_health
+      container: tg-gateway
+      interval: 30
+      log_tail: 30
     - type: docker_logs
       container: tg-gateway
     - type: http
@@ -37,6 +41,13 @@ monitoring:
       window: 10m
       threshold: "> 3"
       severity: warning
+
+    - name: db_connection_failure
+      source: docker_logs
+      pattern: "connection failed|Connection refused|OperationalError|psycopg"
+      window: 5m
+      threshold: "> 2"
+      severity: critical
 
 rollback:
   enabled: true
