@@ -6,9 +6,16 @@ services:
     ports: ["8100:8100"]
     env_file: .env
     extra_hosts: ["host.docker.internal:host-gateway"]
+    networks:
+      - default
+      - mysecbrain_default
     healthcheck:
-      test: ["CMD", "curl", "-sf", "http://localhost:8100/healthz"]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8100/healthz')"]
       interval: 30s
       timeout: 5s
       retries: 3
       start_period: 15s
+
+networks:
+  mysecbrain_default:
+    external: true
