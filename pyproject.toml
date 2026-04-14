@@ -24,7 +24,7 @@ prompt-cli = "tg_gateway.cli:app"
 
 [dependency-groups]
 dev = [
-    "pytest>=8.3.2",
+    "pytest>=9.0.3",
     "pytest-asyncio>=0.24.0",
     "httpx>=0.27.0",
     "pytest-mock>=3.14.0",
